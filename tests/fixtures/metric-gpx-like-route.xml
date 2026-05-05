@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RouteEnvelope>
+  <name>Metric XML route</name>
+  <rte>
+    <rtept lat="0" lon="0">
+      <ele>10</ele>
+      <time>2024-05-25T08:00:00Z</time>
+    </rtept>
+    <rtept lat="0.00100674" lon="0">
+      <ele>10</ele>
+      <time>2024-05-25T08:01:00Z</time>
+    </rtept>
+  </rte>
+</RouteEnvelope>

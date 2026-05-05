@@ -1,0 +1,19 @@
+{
+  "name": "Frame Your Trail",
+  "short_name": "Frame Your Trail",
+  "description": "Turn route files into printable trail posters directly in your browser.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f7faf7",
+  "theme_color": "#0f766e",
+  "categories": ["graphics", "photo", "sports", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

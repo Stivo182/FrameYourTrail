@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1" xmlns:tp="https://frame-your-trail.test/test">
+  <metadata><name>Matrix Elevation Ellipsoid Normalized</name></metadata>
+  <trk>
+    <name>Matrix Elevation Ellipsoid Normalized</name>
+    <trkseg>
+      <trkpt lat="55.003000" lon="37.003000"><ele>130.0</ele><time>2024-04-13T08:00:00Z</time><geoidheight>30.0</geoidheight><extensions><tp:elevationDatum>ellipsoid</tp:elevationDatum></extensions></trkpt>
+      <trkpt lat="55.003020" lon="37.003000"><ele>132.0</ele><time>2024-04-13T08:00:02Z</time><geoidheight>30.0</geoidheight><extensions><tp:elevationDatum>ellipsoid</tp:elevationDatum></extensions></trkpt>
+      <trkpt lat="55.003040" lon="37.003000"><ele>134.0</ele><time>2024-04-13T08:00:04Z</time><geoidheight>30.0</geoidheight><extensions><tp:elevationDatum>ellipsoid</tp:elevationDatum></extensions></trkpt>
+      <trkpt lat="55.003060" lon="37.003000"><ele>136.0</ele><time>2024-04-13T08:00:06Z</time><geoidheight>30.0</geoidheight><extensions><tp:elevationDatum>ellipsoid</tp:elevationDatum></extensions></trkpt>
+      <trkpt lat="55.003080" lon="37.003000"><ele>138.0</ele><time>2024-04-13T08:00:08Z</time><geoidheight>30.0</geoidheight><extensions><tp:elevationDatum>ellipsoid</tp:elevationDatum></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

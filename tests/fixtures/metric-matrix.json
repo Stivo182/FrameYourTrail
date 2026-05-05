@@ -1,0 +1,1046 @@
+{
+  "schemaVersion": 1,
+  "description": "Public synthetic metric validation matrix covering source, recording, terrain, and format axes from the research backlog.",
+  "requiredCoverage": {
+    "deviceType": ["barometric", "non_barometric", "phone"],
+    "recordingMode": ["dense", "smart", "sparse"],
+    "terrain": ["flat", "rolling", "gapped", "urban_noise"],
+    "elevationSource": ["barometric", "gpx", "terrain"],
+    "format": ["gpx", "xml", "tcx", "fit"],
+    "metricMode": ["recomputed_filtered", "recomputed_terrain", "imported_summary"],
+    "noiseScenario": [
+      "clean",
+      "teleport_jitter",
+      "time_gap",
+      "vertical_noise",
+      "stationary_cloud",
+      "duplicate_timestamp",
+      "reversed_chunk",
+      "timezone_inferred",
+      "sparse_resampling",
+      "ellipsoid_msl_mismatch",
+      "unit_mismatch_feet_meters",
+      "barometric_low_relief_oscillation",
+      "barometric_single_point_spike"
+    ]
+  },
+  "requiredCombinations": [
+    { "format": "gpx", "metricMode": "recomputed_filtered" },
+    { "format": "gpx", "metricMode": "recomputed_terrain" },
+    { "format": "xml", "metricMode": "recomputed_filtered" },
+    { "format": "tcx", "metricMode": "imported_summary" },
+    { "format": "fit", "metricMode": "imported_summary" }
+  ],
+  "cases": [
+    {
+      "id": "matrix-barometric-flat-dense",
+      "file": "matrix-barometric-flat-dense.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "barometric",
+        "recordingMode": "dense",
+        "terrain": "flat",
+        "elevationSource": "barometric",
+        "format": "gpx",
+        "metricMode": "recomputed_filtered",
+        "noiseScenario": "clean"
+      },
+      "expected": {
+        "totalDistanceMeters": 20.04,
+        "totalDistance3dMeters": 20.08,
+        "totalDurationSeconds": 9,
+        "movingDurationSeconds": 9,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 8.02,
+        "overallAverageSpeedKmh": 8.02,
+        "maxSpeedKmh": 8.02,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 100.03447821424902,
+        "elevationRangeMeters": 0.03447821424902031
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.02,
+        "totalDistance3dMeters": 0.02,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 10,
+        "outputPointCount": 10,
+        "pointsRemoved": 0,
+        "elevationSource": "barometric",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 1,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 4
+      }
+    },
+    {
+      "id": "matrix-nonbarometric-rolling-sparse",
+      "file": "valid-track.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "non_barometric",
+        "recordingMode": "sparse",
+        "terrain": "rolling",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "clean"
+      },
+      "expected": {
+        "totalDistanceMeters": 1132.89,
+        "totalDistance3dMeters": 1143.11,
+        "totalDurationSeconds": 1680,
+        "movingDurationSeconds": 1680,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 2.43,
+        "overallAverageSpeedKmh": 2.43,
+        "maxSpeedKmh": 2.83,
+        "elevationGainMeters": 125,
+        "elevationLossMeters": 10,
+        "minElevationMeters": 620,
+        "maxElevationMeters": 735,
+        "elevationRangeMeters": 115
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0.5,
+        "elevationLossMeters": 0.5,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic", "sampling_sparse"]
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "sparse",
+        "sampling.nominalIntervalSeconds": 450,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-phone-terrain-gapped",
+      "file": "matrix-phone-terrain-gapped.gpx",
+      "mode": "recomputed_terrain",
+      "terrainElevations": [100, 112, 124, 104, 92],
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "smart",
+        "terrain": "gapped",
+        "elevationSource": "terrain",
+        "format": "gpx",
+        "metricMode": "recomputed_terrain",
+        "noiseScenario": "time_gap"
+      },
+      "expected": {
+        "totalDistanceMeters": 234.93,
+        "totalDistance3dMeters": 241.88,
+        "totalDurationSeconds": 270,
+        "movingDurationSeconds": 90,
+        "stoppedDurationSeconds": 180,
+        "movingAverageSpeedKmh": 9.4,
+        "overallAverageSpeedKmh": 3.13,
+        "maxSpeedKmh": 7.05,
+        "elevationGainMeters": 22.399087744591753,
+        "elevationLossMeters": 30.399087744591753,
+        "minElevationMeters": 92,
+        "maxElevationMeters": 122.39908774459175,
+        "elevationRangeMeters": 30.399087744591753
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0.01,
+        "elevationLossMeters": 0.01,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0.01,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "terrain",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis",
+          "time_gap_segmentation"
+        ],
+        "confidenceFlags": [
+          "filtered_extrema_used",
+          "terrain_relative_elevation_low_confidence",
+          "elevation_dem_corrected",
+          "moving_time_heuristic",
+          "sampling_smart_recording",
+          "time_gap_segments_preserved"
+        ]
+      },
+      "expectedAudit": {
+        "summary.flags": 6
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "smart",
+        "sampling.nominalIntervalSeconds": 30,
+        "continuity.continuousSegmentCount": 2,
+        "continuity.timeGapBreakCount": 1,
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-teleport-jitter",
+      "file": "matrix-noise-teleport-jitter.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "dense",
+        "terrain": "urban_noise",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "teleport_jitter"
+      },
+      "expected": {
+        "totalDistanceMeters": 16.607,
+        "totalDistance3dMeters": 16.724,
+        "totalDurationSeconds": 20,
+        "movingDurationSeconds": 12,
+        "stoppedDurationSeconds": 8,
+        "movingAverageSpeedKmh": 4.982,
+        "overallAverageSpeedKmh": 2.989,
+        "maxSpeedKmh": 3.72,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 101.8,
+        "elevationRangeMeters": 1.8
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0.01,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 13,
+        "outputPointCount": 11,
+        "pointsRemoved": 2,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "duplicate_points",
+          "gps_jump",
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis",
+          "xy_jitter_distance_threshold"
+        ],
+        "confidenceFlags": [
+          "filtered_extrema_used",
+          "moving_time_heuristic",
+          "xy_jitter_suppressed"
+        ]
+      },
+      "expectedAudit": {
+        "cleaning.removedPoints": 2,
+        "continuity.xyJitter": 2,
+        "summary.flags": 3
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "continuity.timeGapBreakCount": 0,
+        "continuity.xyJitterSegmentCount": 2,
+        "continuity.routeXyJitterSegmentCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-duplicate-timestamp",
+      "file": "matrix-noise-duplicate-timestamp.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "dense",
+        "terrain": "urban_noise",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "duplicate_timestamp"
+      },
+      "expected": {
+        "totalDistanceMeters": 11.13,
+        "totalDistance3dMeters": 11.31,
+        "totalDurationSeconds": 10,
+        "movingDurationSeconds": 10,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 4.01,
+        "overallAverageSpeedKmh": 4.01,
+        "maxSpeedKmh": 4.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 102,
+        "elevationRangeMeters": 2
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 7,
+        "outputPointCount": 6,
+        "pointsRemoved": 1,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "time_order",
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedAudit": {
+        "cleaning.removedPoints": 1,
+        "summary.flags": 2
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "continuity.timeGapBreakCount": 0,
+        "temporal.timeZoneConfidence": "high",
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-reversed-chunk",
+      "file": "matrix-noise-reversed-chunk.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "dense",
+        "terrain": "urban_noise",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "reversed_chunk"
+      },
+      "expected": {
+        "totalDistanceMeters": 11.13,
+        "totalDistance3dMeters": 11.18,
+        "totalDurationSeconds": 10,
+        "movingDurationSeconds": 10,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 4.01,
+        "overallAverageSpeedKmh": 4.01,
+        "maxSpeedKmh": 4.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 120,
+        "maxElevationMeters": 121,
+        "elevationRangeMeters": 1
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 9,
+        "outputPointCount": 6,
+        "pointsRemoved": 3,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "time_order",
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedAudit": {
+        "cleaning.removedPoints": 3,
+        "summary.flags": 2
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "continuity.timeGapBreakCount": 0,
+        "temporal.timeZoneConfidence": "high",
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-timezone-inferred",
+      "file": "matrix-noise-timezone-inferred.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "dense",
+        "terrain": "flat",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "timezone_inferred"
+      },
+      "expected": {
+        "totalDistanceMeters": 8.91,
+        "totalDistance3dMeters": 8.94,
+        "totalDurationSeconds": 8,
+        "movingDurationSeconds": 8,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 4.01,
+        "overallAverageSpeedKmh": 4.01,
+        "maxSpeedKmh": 4.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 100.8,
+        "elevationRangeMeters": 0.8
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0.01,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic", "tz_inferred"]
+      },
+      "expectedAudit": {
+        "summary.flags": 3
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "temporal.timeZoneConfidence": "low",
+        "temporal.timeZoneMissingPointCount": 2,
+        "temporal.timeZoneExplicitPointCount": 3,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-sparse-resampling",
+      "file": "matrix-noise-sparse-resampling.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "non_barometric",
+        "recordingMode": "sparse",
+        "terrain": "rolling",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "sparse_resampling"
+      },
+      "expected": {
+        "totalDistanceMeters": 445.29,
+        "totalDistance3dMeters": 445.58,
+        "totalDurationSeconds": 480,
+        "movingDurationSeconds": 480,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 3.34,
+        "overallAverageSpeedKmh": 3.34,
+        "maxSpeedKmh": 3.34,
+        "elevationGainMeters": 16,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 116,
+        "elevationRangeMeters": 16
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic", "sampling_sparse"]
+      },
+      "expectedAudit": {
+        "summary.flags": 3
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "sparse",
+        "sampling.nominalIntervalSeconds": 120,
+        "sampling.maxIntervalSeconds": 120,
+        "continuity.timeGapBreakCount": 0,
+        "continuity.timeGapThresholdSeconds": 360,
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-elevation-ellipsoid-normalized",
+      "file": "matrix-elevation-ellipsoid-normalized.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "non_barometric",
+        "recordingMode": "dense",
+        "terrain": "rolling",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "ellipsoid_msl_mismatch"
+      },
+      "expected": {
+        "totalDistanceMeters": 8.91,
+        "totalDistance3dMeters": 11.97,
+        "totalDurationSeconds": 8,
+        "movingDurationSeconds": 8,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 4.01,
+        "overallAverageSpeedKmh": 4.01,
+        "maxSpeedKmh": 4.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 108,
+        "elevationRangeMeters": 8
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedAudit": {
+        "elevation.elevationSource": "gpx",
+        "summary.flags": 2
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "temporal.timeZoneConfidence": "high",
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-elevation-feet-like-values",
+      "file": "matrix-elevation-feet-like-values.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "non_barometric",
+        "recordingMode": "dense",
+        "terrain": "rolling",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "unit_mismatch_feet_meters"
+      },
+      "expected": {
+        "totalDistanceMeters": 8.91,
+        "totalDistance3dMeters": 21.89,
+        "totalDurationSeconds": 8,
+        "movingDurationSeconds": 8,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 4.01,
+        "overallAverageSpeedKmh": 4.01,
+        "maxSpeedKmh": 4.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 328,
+        "maxElevationMeters": 348,
+        "elevationRangeMeters": 20
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedAudit": {
+        "elevation.elevationSource": "gpx",
+        "summary.flags": 2
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 2,
+        "temporal.timeZoneConfidence": "high",
+        "elevation.thresholds.turnThresholdMeters": 3
+      }
+    },
+    {
+      "id": "matrix-noise-vertical-flat",
+      "file": "matrix-noise-vertical-flat.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "dense",
+        "terrain": "flat",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "vertical_noise"
+      },
+      "expected": {
+        "totalDistanceMeters": 17.81,
+        "totalDistance3dMeters": 25.59,
+        "totalDurationSeconds": 8,
+        "movingDurationSeconds": 8,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 8.02,
+        "overallAverageSpeedKmh": 8.02,
+        "maxSpeedKmh": 8.02,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 99.82760893974692,
+        "maxElevationMeters": 100,
+        "elevationRangeMeters": 0.1723910602530765
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 9,
+        "outputPointCount": 9,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedAudit": {
+        "elevation.threshold": 4
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 1,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 4
+      }
+    },
+    {
+      "id": "matrix-noise-stationary-cloud",
+      "file": "matrix-noise-stationary-cloud.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "phone",
+        "recordingMode": "smart",
+        "terrain": "flat",
+        "elevationSource": "gpx",
+        "format": "gpx",
+        "noiseScenario": "stationary_cloud"
+      },
+      "expected": {
+        "totalDistanceMeters": 0,
+        "totalDistance3dMeters": 0,
+        "totalDurationSeconds": 120,
+        "movingDurationSeconds": null,
+        "stoppedDurationSeconds": 120,
+        "movingAverageSpeedKmh": null,
+        "overallAverageSpeedKmh": null,
+        "maxSpeedKmh": 0,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 100,
+        "elevationRangeMeters": 0
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 5,
+        "outputPointCount": 5,
+        "pointsRemoved": 0,
+        "elevationSource": "gpx",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis",
+          "xy_jitter_distance_threshold"
+        ],
+        "confidenceFlags": [
+          "filtered_extrema_used",
+          "sampling_smart_recording",
+          "xy_jitter_suppressed"
+        ]
+      },
+      "expectedAudit": {
+        "cleaning.removedPoints": 0,
+        "continuity.xyJitter": 4,
+        "summary.flags": 4
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "smart",
+        "sampling.nominalIntervalSeconds": 30,
+        "continuity.timeGapBreakCount": 0,
+        "continuity.xyJitterSegmentCount": 4,
+        "elevation.thresholds.turnThresholdMeters": 5
+      }
+    },
+    {
+      "id": "matrix-barometric-low-relief-oscillation",
+      "file": "matrix-barometric-low-relief-oscillation.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "barometric",
+        "recordingMode": "dense",
+        "terrain": "flat",
+        "elevationSource": "barometric",
+        "format": "gpx",
+        "noiseScenario": "barometric_low_relief_oscillation"
+      },
+      "expected": {
+        "totalDistanceMeters": 17.81,
+        "totalDistance3dMeters": 27.38,
+        "totalDurationSeconds": 8,
+        "movingDurationSeconds": 8,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 8.02,
+        "overallAverageSpeedKmh": 8.02,
+        "maxSpeedKmh": 8.02,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 100.425891621671,
+        "elevationRangeMeters": 0.42589162167099914
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0.01
+      },
+      "expectedProvenance": {
+        "inputPointCount": 9,
+        "outputPointCount": 9,
+        "pointsRemoved": 0,
+        "elevationSource": "barometric",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 1,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 4,
+        "elevation.barometricSanity.evaluated": false,
+        "elevation.barometricSanity.trusted": false,
+        "elevation.barometricSanity.reason": null,
+        "elevation.barometricSanity.sampleCount": 0
+      }
+    },
+    {
+      "id": "matrix-barometric-single-point-spike",
+      "file": "matrix-barometric-single-point-spike.gpx",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "deviceType": "barometric",
+        "recordingMode": "dense",
+        "terrain": "flat",
+        "elevationSource": "barometric",
+        "format": "gpx",
+        "noiseScenario": "barometric_single_point_spike"
+      },
+      "expected": {
+        "totalDistanceMeters": 13.36,
+        "totalDistance3dMeters": 59.82,
+        "totalDurationSeconds": 6,
+        "movingDurationSeconds": 6,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 8.02,
+        "overallAverageSpeedKmh": 8.02,
+        "maxSpeedKmh": 8.02,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 100,
+        "maxElevationMeters": 101.5,
+        "elevationRangeMeters": 1.5
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.01,
+        "totalDistance3dMeters": 0.01,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "stoppedDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0.01,
+        "overallAverageSpeedKmh": 0.01,
+        "maxSpeedKmh": 0.01,
+        "elevationGainMeters": 0,
+        "elevationLossMeters": 0,
+        "minElevationMeters": 0,
+        "maxElevationMeters": 0,
+        "elevationRangeMeters": 0
+      },
+      "expectedProvenance": {
+        "inputPointCount": 7,
+        "outputPointCount": 7,
+        "pointsRemoved": 0,
+        "elevationSource": "barometric",
+        "filtersApplied": [
+          "distance_domain_fusion",
+          "confirmed_elevation_turns",
+          "filtered_extrema_used",
+          "moving_time_hysteresis"
+        ],
+        "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic"]
+      },
+      "expectedDiagnostics": {
+        "sampling.recordingMode": "dense",
+        "sampling.nominalIntervalSeconds": 1,
+        "continuity.timeGapBreakCount": 0,
+        "elevation.thresholds.turnThresholdMeters": 4,
+        "elevation.barometricSanity.evaluated": false,
+        "elevation.barometricSanity.trusted": false,
+        "elevation.barometricSanity.reason": null,
+        "elevation.barometricSanity.sampleCount": 0
+      }
+    },
+    {
+      "id": "matrix-format-xml-route-filtered",
+      "file": "metric-gpx-like-route.xml",
+      "mediaType": "application/xml",
+      "mode": "recomputed_filtered",
+      "tags": {
+        "format": "xml",
+        "metricMode": "recomputed_filtered"
+      },
+      "expected": {
+        "totalDistanceMeters": 111.32
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0.05
+      }
+    },
+    {
+      "id": "matrix-format-tcx-lap-imported",
+      "file": "metric-tcx-lap-summary.tcx",
+      "mediaType": "application/vnd.garmin.tcx+xml",
+      "mode": "imported_summary",
+      "tags": {
+        "format": "tcx",
+        "metricMode": "imported_summary"
+      },
+      "expected": {
+        "totalDistanceMeters": 2400,
+        "totalDurationSeconds": 600,
+        "movingDurationSeconds": 600,
+        "maxSpeedKmh": 27
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "maxSpeedKmh": 0
+      }
+    },
+    {
+      "id": "matrix-format-fit-session-imported",
+      "file": "minimal-activity.fit",
+      "mediaType": "application/octet-stream",
+      "mode": "imported_summary",
+      "tags": {
+        "format": "fit",
+        "metricMode": "imported_summary"
+      },
+      "expected": {
+        "totalDistanceMeters": 600,
+        "totalDurationSeconds": 720,
+        "movingDurationSeconds": 700,
+        "movingAverageSpeedKmh": 3.6,
+        "maxSpeedKmh": 9
+      },
+      "tolerance": {
+        "totalDistanceMeters": 0,
+        "totalDurationSeconds": 0,
+        "movingDurationSeconds": 0,
+        "movingAverageSpeedKmh": 0,
+        "maxSpeedKmh": 0
+      }
+    }
+  ]
+}

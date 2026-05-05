@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1" xmlns:tp="https://frame-your-trail.test/test">
+  <metadata><name>Matrix Barometric Low Relief Oscillation</name></metadata>
+  <trk>
+    <name>Matrix Barometric Low Relief Oscillation</name>
+    <trkseg>
+      <trkpt lat="55.000000" lon="37.000000"><ele>100.0</ele><time>2024-02-02T08:00:00Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000020" lon="37.000000"><ele>102.6</ele><time>2024-02-02T08:00:01Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000040" lon="37.000000"><ele>100.0</ele><time>2024-02-02T08:00:02Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000060" lon="37.000000"><ele>102.6</ele><time>2024-02-02T08:00:03Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000080" lon="37.000000"><ele>100.0</ele><time>2024-02-02T08:00:04Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000100" lon="37.000000"><ele>102.6</ele><time>2024-02-02T08:00:05Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000120" lon="37.000000"><ele>100.0</ele><time>2024-02-02T08:00:06Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000140" lon="37.000000"><ele>102.6</ele><time>2024-02-02T08:00:07Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+      <trkpt lat="55.000160" lon="37.000000"><ele>100.0</ele><time>2024-02-02T08:00:08Z</time><extensions><tp:elevationSource>barometric</tp:elevationSource></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

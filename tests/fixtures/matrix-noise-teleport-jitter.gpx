@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Matrix Noise Teleport Jitter</name></metadata>
+  <trk>
+    <name>Matrix Noise Teleport Jitter</name>
+    <trkseg>
+      <trkpt lat="55.000000" lon="37.000000"><ele>100.0</ele><time>2024-04-01T07:00:00Z</time></trkpt>
+      <trkpt lat="55.000000" lon="37.000000"><ele>100.0</ele><time>2024-04-01T07:00:00Z</time></trkpt>
+      <trkpt lat="55.000018" lon="37.000000"><ele>100.2</ele><time>2024-04-01T07:00:02Z</time></trkpt>
+      <trkpt lat="55.010000" lon="37.010000"><ele>100.3</ele><time>2024-04-01T07:00:03Z</time></trkpt>
+      <trkpt lat="55.000036" lon="37.000000"><ele>100.4</ele><time>2024-04-01T07:00:04Z</time></trkpt>
+      <trkpt lat="55.000036" lon="37.000004"><ele>100.5</ele><time>2024-04-01T07:00:06Z</time></trkpt>
+      <trkpt lat="55.000036" lon="37.000008"><ele>100.6</ele><time>2024-04-01T07:00:08Z</time></trkpt>
+      <trkpt lat="55.000054" lon="37.000000"><ele>100.8</ele><time>2024-04-01T07:00:10Z</time></trkpt>
+      <trkpt lat="55.000072" lon="37.000000"><ele>101.0</ele><time>2024-04-01T07:00:12Z</time></trkpt>
+      <trkpt lat="55.000090" lon="37.000000"><ele>101.2</ele><time>2024-04-01T07:00:14Z</time></trkpt>
+      <trkpt lat="55.000108" lon="37.000000"><ele>101.4</ele><time>2024-04-01T07:00:16Z</time></trkpt>
+      <trkpt lat="55.000126" lon="37.000000"><ele>101.6</ele><time>2024-04-01T07:00:18Z</time></trkpt>
+      <trkpt lat="55.000144" lon="37.000000"><ele>101.8</ele><time>2024-04-01T07:00:20Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

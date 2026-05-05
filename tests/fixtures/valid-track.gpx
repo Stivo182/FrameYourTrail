@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailTest" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Test Ridge Route</name></metadata>
+  <trk>
+    <name>Test Ridge Route</name>
+    <trkseg>
+      <trkpt lat="43.100000" lon="42.100000"><ele>620</ele><time>2024-05-25T08:00:00Z</time></trkpt>
+      <trkpt lat="43.101000" lon="42.102000"><ele>640</ele><time>2024-05-25T08:05:00Z</time></trkpt>
+      <trkpt lat="43.103000" lon="42.105000"><ele>700</ele><time>2024-05-25T08:12:00Z</time></trkpt>
+      <trkpt lat="43.105000" lon="42.108000"><ele>690</ele><time>2024-05-25T08:20:00Z</time></trkpt>
+      <trkpt lat="43.107000" lon="42.110000"><ele>735</ele><time>2024-05-25T08:28:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

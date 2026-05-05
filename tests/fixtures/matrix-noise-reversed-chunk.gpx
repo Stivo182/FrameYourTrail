@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Matrix Noise Reversed Chunk</name></metadata>
+  <trk>
+    <name>Matrix Noise Reversed Chunk</name>
+    <trkseg>
+      <trkpt lat="55.001000" lon="37.001000"><ele>120.0</ele><time>2024-04-11T08:00:00Z</time></trkpt>
+      <trkpt lat="55.001020" lon="37.001000"><ele>120.2</ele><time>2024-04-11T08:00:02Z</time></trkpt>
+      <trkpt lat="55.001040" lon="37.001000"><ele>120.4</ele><time>2024-04-11T08:00:04Z</time></trkpt>
+      <trkpt lat="55.010000" lon="37.010000"><ele>150.0</ele><time>2024-04-11T08:00:03Z</time></trkpt>
+      <trkpt lat="55.010020" lon="37.010020"><ele>151.0</ele><time>2024-04-11T08:00:02Z</time></trkpt>
+      <trkpt lat="55.010040" lon="37.010040"><ele>152.0</ele><time>2024-04-11T08:00:01Z</time></trkpt>
+      <trkpt lat="55.001060" lon="37.001000"><ele>120.6</ele><time>2024-04-11T08:00:06Z</time></trkpt>
+      <trkpt lat="55.001080" lon="37.001000"><ele>120.8</ele><time>2024-04-11T08:00:08Z</time></trkpt>
+      <trkpt lat="55.001100" lon="37.001000"><ele>121.0</ele><time>2024-04-11T08:00:10Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

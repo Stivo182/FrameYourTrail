@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailTest">
+  <trk><name>Elevation Only</name><trkseg>
+    <trkpt lat="43.100000" lon="42.100000"><ele>620</ele></trkpt>
+    <trkpt lat="43.101000" lon="42.102000"><ele>640</ele></trkpt>
+  </trkseg></trk>
+</gpx>

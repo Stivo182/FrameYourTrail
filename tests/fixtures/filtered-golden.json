@@ -1,0 +1,51 @@
+[
+  {
+    "id": "valid-track-filtered",
+    "file": "valid-track.gpx",
+    "mode": "recomputed_filtered",
+    "source": "synthetic regression fixture with reviewed app-level metrics",
+    "expected": {
+      "totalDistanceMeters": 1132.89,
+      "totalDurationSeconds": 1680,
+      "movingDurationSeconds": 1680,
+      "averageSpeedKmh": 2.43,
+      "overallAverageSpeedKmh": 2.43,
+      "movingAverageSpeedKmh": 2.43,
+      "elevationGainMeters": 125,
+      "elevationLossMeters": 10,
+      "minElevationMeters": 620,
+      "maxElevationMeters": 735,
+      "maxSpeedKmh": 2.83
+    },
+    "tolerance": {
+      "totalDistanceMeters": 0.01,
+      "totalDurationSeconds": 0,
+      "movingDurationSeconds": 0,
+      "averageSpeedKmh": 0.01,
+      "overallAverageSpeedKmh": 0.01,
+      "movingAverageSpeedKmh": 0.01,
+      "elevationGainMeters": 0.5,
+      "elevationLossMeters": 0.5,
+      "minElevationMeters": 0,
+      "maxElevationMeters": 0,
+      "maxSpeedKmh": 0.01
+    },
+    "expectedProvenance": {
+      "inputPointCount": 5,
+      "outputPointCount": 5,
+      "pointsRemoved": 0,
+      "elevationSource": "gpx",
+      "filtersApplied": [
+        "distance_domain_fusion",
+        "confirmed_elevation_turns",
+        "filtered_extrema_used",
+        "moving_time_hysteresis"
+      ],
+      "confidenceFlags": ["filtered_extrema_used", "moving_time_heuristic", "sampling_sparse"]
+    },
+    "expectedDiagnostics": {
+      "recordingMode": "sparse",
+      "nominalIntervalSeconds": 450
+    }
+  }
+]

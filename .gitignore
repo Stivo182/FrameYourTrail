@@ -1,0 +1,16 @@
+# Agent workspaces and local agent state
+.superpowers/
+.worktrees/
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Test and browser reports
+playwright-report/
+test-results/
+
+# Local-only files
+*.log
+*.local.json

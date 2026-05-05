@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Matrix Noise Stationary Cloud</name></metadata>
+  <trk>
+    <name>Matrix Noise Stationary Cloud</name>
+    <trkseg>
+      <trkpt lat="55.000000" lon="37.000000"><ele>100.0</ele><time>2024-05-05T08:00:00Z</time></trkpt>
+      <trkpt lat="55.000006" lon="37.000002"><ele>100.1</ele><time>2024-05-05T08:00:30Z</time></trkpt>
+      <trkpt lat="54.999998" lon="37.000005"><ele>99.9</ele><time>2024-05-05T08:01:00Z</time></trkpt>
+      <trkpt lat="55.000004" lon="36.999997"><ele>100.2</ele><time>2024-05-05T08:01:30Z</time></trkpt>
+      <trkpt lat="55.000001" lon="37.000003"><ele>100.0</ele><time>2024-05-05T08:02:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Matrix Noise Duplicate Timestamp</name></metadata>
+  <trk>
+    <name>Matrix Noise Duplicate Timestamp</name>
+    <trkseg>
+      <trkpt lat="55.000000" lon="37.000000"><ele>100.0</ele><time>2024-04-10T08:00:00Z</time></trkpt>
+      <trkpt lat="55.000020" lon="37.000000"><ele>100.4</ele><time>2024-04-10T08:00:02Z</time></trkpt>
+      <trkpt lat="55.020000" lon="37.020000"><ele>180.0</ele><time>2024-04-10T08:00:02Z</time></trkpt>
+      <trkpt lat="55.000040" lon="37.000000"><ele>100.8</ele><time>2024-04-10T08:00:04Z</time></trkpt>
+      <trkpt lat="55.000060" lon="37.000000"><ele>101.2</ele><time>2024-04-10T08:00:06Z</time></trkpt>
+      <trkpt lat="55.000080" lon="37.000000"><ele>101.6</ele><time>2024-04-10T08:00:08Z</time></trkpt>
+      <trkpt lat="55.000100" lon="37.000000"><ele>102.0</ele><time>2024-04-10T08:00:10Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,52 @@
+{
+  "name": "frame-your-trail",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "perf:large-track": "node scripts/large-track-benchmark.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "typecheck": "tsc -p jsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:metrics": "node scripts/metric-regression-runner.mjs tests/fixtures/filtered-golden.json && node scripts/metric-regression-runner.mjs tests/fixtures/metric-matrix.json",
+    "test:metrics:local": "node scripts/metric-regression-runner.mjs metric-goldens.local.json",
+    "test:perf": "node scripts/large-track-budget.mjs",
+    "test:build": "node scripts/verify-build-output.mjs",
+    "test:e2e": "playwright test tests/e2e/app.spec.js",
+    "test:pages": "node scripts/run-pages-smoke.mjs",
+    "test:visual": "playwright test tests/e2e/visual.spec.js",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.js",
+    "verify": "npm run format:check && npm run lint && npm run lint:css && npm run typecheck && npm run test && npm run test:metrics && npm run test:perf && npm run build && npm run test:build && npm run test:e2e && npm run test:visual && npm run test:a11y"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "echarts": "^6.0.0",
+    "fit-file-parser": "^3.0.0",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^3.0.1",
+    "lucide": "^1.14.0",
+    "maplibre-gl": "^5.6.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@eslint/js": "^9.26.0",
+    "@playwright/test": "^1.52.0",
+    "@types/d3": "^7.4.3",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.26.0",
+    "globals": "^16.1.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.5.3",
+    "stylelint": "^16.19.1",
+    "stylelint-config-standard": "^38.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.3"
+  }
+}

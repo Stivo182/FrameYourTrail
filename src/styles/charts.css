@@ -1,0 +1,191 @@
+.chart-slot svg {
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.elevation-landscape svg {
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.echarts-chart-frame {
+  inline-size: 100%;
+  min-block-size: 170px;
+}
+
+.echarts-chart {
+  inline-size: 100%;
+  min-block-size: 170px;
+}
+
+.echarts-chart--elevation {
+  block-size: 170px;
+}
+
+.echarts-chart svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.chart-grid-lines line {
+  stroke: rgb(43 61 50 / 14%);
+}
+
+.chart-grid-lines path,
+.chart-axis path,
+.chart-axis line {
+  stroke: transparent;
+}
+
+.chart-axis text,
+.chart-label {
+  fill: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.chart-title {
+  fill: #17211b;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.chart-title--poster {
+  filter: drop-shadow(0 1px 0 rgb(255 255 255 / 82%));
+}
+
+.chart-label--max {
+  fill: #b94a3a;
+}
+
+.chart-label--min {
+  fill: #6f8f4d;
+}
+
+.chart-area--elevation {
+  fill: #d9793e;
+  opacity: 0.22;
+}
+
+.chart-area--speed {
+  opacity: 1;
+}
+
+.chart-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.chart-line--speed {
+  filter: drop-shadow(0 2px 2px rgb(201 91 46 / 18%));
+  stroke: #c95b2e;
+  stroke-width: 5.5;
+}
+
+.chart-average {
+  stroke: #6f8f4d;
+  stroke-dasharray: 10 6;
+  stroke-width: 2.4;
+}
+
+.chart-moving-speed {
+  stroke: #d9793e;
+  stroke-dasharray: 4 8;
+  stroke-width: 2.4;
+}
+
+.chart-zero {
+  stroke: #456250;
+  stroke-dasharray: 5 8;
+  stroke-width: 2.2;
+}
+
+.chart-slope-bar {
+  opacity: 0.58;
+  shape-rendering: crispedges;
+}
+
+.chart-slope-bar--up {
+  fill: #d9793e;
+}
+
+.chart-slope-bar--down {
+  fill: #5f8f5f;
+}
+
+.chart-legend__label {
+  fill: #415348;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chart-legend__swatch--speed {
+  fill: #c95b2e;
+}
+
+.chart-legend__swatch--average {
+  fill: #6f8f4d;
+}
+
+.chart-legend__swatch--moving,
+.chart-legend__swatch--slope-up {
+  fill: #d9793e;
+}
+
+.chart-legend__swatch--slope-down {
+  fill: #5f8f5f;
+}
+
+.chart-hover-target {
+  cursor: crosshair;
+  fill: transparent;
+  pointer-events: all;
+}
+
+.chart-tooltip {
+  pointer-events: none;
+}
+
+.chart-tooltip__guide {
+  stroke: rgb(43 61 50 / 34%);
+  stroke-dasharray: 4 6;
+  stroke-width: 1.5;
+}
+
+.chart-tooltip__dot {
+  fill: #fff;
+  stroke: #17211b;
+  stroke-width: 2.5;
+}
+
+.chart-tooltip__panel {
+  fill: rgb(255 255 255 / 96%);
+  stroke: rgb(43 61 50 / 16%);
+}
+
+.chart-tooltip__distance {
+  fill: #5f6c61;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chart-tooltip__value {
+  fill: #17211b;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.chart-marker--max {
+  fill: #b94a3a;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.chart-marker--min {
+  fill: #6f8f4d;
+  stroke: #fff;
+  stroke-width: 3;
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailTest">
+  <trk><name>Flat Data</name><trkseg>
+    <trkpt lat="43.100000" lon="42.100000"><time>2024-05-25T08:00:00Z</time></trkpt>
+    <trkpt lat="43.101000" lon="42.102000"><time>2024-05-25T08:05:00Z</time></trkpt>
+  </trkseg></trk>
+</gpx>

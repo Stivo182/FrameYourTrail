@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FrameYourTrailMetricMatrix" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Matrix Elevation Feet Like Values</name></metadata>
+  <trk>
+    <name>Matrix Elevation Feet Like Values</name>
+    <trkseg>
+      <trkpt lat="55.004000" lon="37.004000"><ele>328.0</ele><time>2024-04-14T08:00:00Z</time></trkpt>
+      <trkpt lat="55.004020" lon="37.004000"><ele>333.0</ele><time>2024-04-14T08:00:02Z</time></trkpt>
+      <trkpt lat="55.004040" lon="37.004000"><ele>338.0</ele><time>2024-04-14T08:00:04Z</time></trkpt>
+      <trkpt lat="55.004060" lon="37.004000"><ele>343.0</ele><time>2024-04-14T08:00:06Z</time></trkpt>
+      <trkpt lat="55.004080" lon="37.004000"><ele>348.0</ele><time>2024-04-14T08:00:08Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
