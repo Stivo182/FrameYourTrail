@@ -1,13 +1,20 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { JSDOM } from "jsdom";
-import { SEO_CONFIG, getSocialPreviewUrl, renderRobotsTxt } from "./seo-config.mjs";
+import {
+  SEO_CONFIG,
+  getSiteBasePath,
+  getSocialPreviewUrl,
+  renderRobotsTxt
+} from "./seo-config.mjs";
 
 const distDir = join(process.cwd(), "dist");
 const assetsDir = join(process.cwd(), "dist", "assets");
 const canonicalUrl = SEO_CONFIG.canonicalUrl;
 const socialPreviewUrl = getSocialPreviewUrl();
-const publicAssetBaseUrl = normalizePublicAssetBaseUrl(process.env.VITE_BASE_PATH || "/");
+const publicAssetBaseUrl = normalizePublicAssetBaseUrl(
+  process.env.VITE_BASE_PATH || getSiteBasePath()
+);
 const assets = await readdir(assetsDir);
 const workerAssets = assets.filter((asset) =>
   /^track-analysis-worker-(?!client-)[A-Za-z0-9_-]+\.js$/.test(asset)
@@ -116,6 +123,7 @@ assertEquals(
   `${publicAssetBaseUrl}icon.svg`,
   `dist/index.html icon link does not point to ${publicAssetBaseUrl}icon.svg`
 );
+assertLocalBuildAssetUrlsUseAssetBasePath(indexDocument, `${publicAssetBaseUrl}assets/`);
 assertEquals(
   meta(indexDocument, "property", "og:url"),
   canonicalUrl,
@@ -208,6 +216,67 @@ async function assertNoEmptyJavaScriptAssets(assets) {
 function normalizePublicAssetBaseUrl(basePath) {
   const withLeadingSlash = basePath.startsWith("/") ? basePath : `/${basePath}`;
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+/**
+ * @param {Document} document
+ * @param {string} assetBasePath
+ */
+function assertLocalBuildAssetUrlsUseAssetBasePath(document, assetBasePath) {
+  const assetUrls = [
+    ...urlsFromElements(document, "script[src]", "src"),
+    ...urlsFromRelLinks(document, "modulepreload"),
+    ...urlsFromRelLinks(document, "stylesheet")
+  ];
+
+  for (const url of assetUrls) {
+    if (isExternalUrl(url) || url.startsWith("data:")) {
+      continue;
+    }
+
+    if (!url.startsWith(assetBasePath)) {
+      fail(`dist/index.html asset URL does not point to ${assetBasePath}: ${url}`);
+    }
+  }
+}
+
+/**
+ * @param {Document} document
+ * @param {string} rel
+ */
+function urlsFromRelLinks(document, rel) {
+  return [...document.querySelectorAll("link[href]")]
+    .filter((element) => hasRel(element, rel))
+    .map((element) => element.getAttribute("href") ?? "")
+    .filter(Boolean);
+}
+
+/**
+ * @param {Document} document
+ * @param {string} selector
+ * @param {string} attribute
+ */
+function urlsFromElements(document, selector, attribute) {
+  return [...document.querySelectorAll(selector)]
+    .map((element) => element.getAttribute(attribute) ?? "")
+    .filter(Boolean);
+}
+
+/**
+ * @param {Element} element
+ * @param {string} rel
+ */
+function hasRel(element, rel) {
+  return (element.getAttribute("rel") ?? "")
+    .split(/\s+/)
+    .some((token) => token.toLowerCase() === rel);
+}
+
+/**
+ * @param {string} url
+ */
+function isExternalUrl(url) {
+  return url.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(url);
 }
 
 /**

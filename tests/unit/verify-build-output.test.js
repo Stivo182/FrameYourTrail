@@ -6,12 +6,18 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
-import { SEO_CONFIG, getSocialPreviewUrl, renderRobotsTxt } from "../../scripts/seo-config.mjs";
+import {
+  SEO_CONFIG,
+  getSiteBasePath,
+  getSocialPreviewUrl,
+  renderRobotsTxt
+} from "../../scripts/seo-config.mjs";
 
 const execFileAsync = promisify(execFile);
 const CUSTOM_CANONICAL_URL = "https://example.test/FrameYourTrail/";
 const CUSTOM_SOCIAL_IMAGE_URL = `${CUSTOM_CANONICAL_URL}social-preview.jpg`;
-const GITHUB_PAGES_BASE_PATH = "/FrameYourTrail/";
+const GITHUB_PAGES_BASE_PATH = getSiteBasePath();
+const CUSTOM_BASE_PATH = "/custom-base/";
 const SCRIPT_PATH = resolve("scripts/verify-build-output.mjs");
 
 describe("production build output verifier", () => {
@@ -52,8 +58,8 @@ describe("production build output verifier", () => {
         <html lang="en">
           <head>
             <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
-            <link rel="manifest" href="/site.webmanifest" />
-            <link rel="icon" href="/icon.svg" />
+            <link rel="manifest" href="${GITHUB_PAGES_BASE_PATH}site.webmanifest" />
+            <link rel="icon" href="${GITHUB_PAGES_BASE_PATH}icon.svg" />
             <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
             <meta property="og:image" content="${getSocialPreviewUrl()}" />
             <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
@@ -79,7 +85,56 @@ describe("production build output verifier", () => {
     expect(result.stdout).toContain("Verified production SEO discovery assets and canonical URLs");
   });
 
-  it("derives built public asset links from VITE_BASE_PATH", async () => {
+  it("derives built public asset links from the canonical site base path", async () => {
+    const fixtureDir = await createDistFixture();
+
+    await expect(runVerifier(fixtureDir)).resolves.toMatchObject({
+      stdout: expect.stringContaining("Verified production SEO discovery assets and canonical URLs")
+    });
+  });
+
+  it("allows built public asset links to be overridden by VITE_BASE_PATH", async () => {
+    const fixtureDir = await createDistFixture({
+      indexHtml: `<!doctype html>
+        <html lang="en">
+          <head>
+            <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
+            <link rel="manifest" href="${CUSTOM_BASE_PATH}site.webmanifest" />
+            <link rel="icon" href="${CUSTOM_BASE_PATH}icon.svg" />
+            <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
+            <meta property="og:image" content="${getSocialPreviewUrl()}" />
+            <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
+            <script type="application/ld+json">
+              { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
+            </script>
+            <script type="module" crossorigin src="${CUSTOM_BASE_PATH}assets/index-abcdefgh.js"></script>
+            <link rel="modulepreload" crossorigin href="${CUSTOM_BASE_PATH}assets/chunk-abcdefgh.js" />
+            <link rel="stylesheet" crossorigin href="${CUSTOM_BASE_PATH}assets/index-abcdefgh.css" />
+          </head>
+          <body></body>
+        </html>`,
+      sitemap: `<?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url>
+            <loc>${SEO_CONFIG.canonicalUrl}</loc>
+            <lastmod>${SEO_CONFIG.sitemapLastmod}</lastmod>
+          </url>
+        </urlset>`,
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
+    });
+
+    await expect(
+      runVerifier(fixtureDir, { VITE_BASE_PATH: CUSTOM_BASE_PATH })
+    ).resolves.toMatchObject({
+      stdout: expect.stringContaining("Verified production SEO discovery assets and canonical URLs")
+    });
+  });
+
+  it("rejects root-relative production entry asset links for GitHub project Pages", async () => {
     const fixtureDir = await createDistFixture({
       indexHtml: `<!doctype html>
         <html lang="en">
@@ -93,22 +148,157 @@ describe("production build output verifier", () => {
             <script type="application/ld+json">
               { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
             </script>
+            <script type="module" crossorigin src="/assets/index-abcdefgh.js"></script>
+            <link rel="modulepreload" crossorigin href="/assets/chunk-abcdefgh.js" />
+            <link rel="stylesheet" crossorigin href="/assets/index-abcdefgh.css" />
           </head>
           <body></body>
         </html>`,
-      sitemap: `<?xml version="1.0" encoding="UTF-8"?>
-        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-          <url>
-            <loc>${SEO_CONFIG.canonicalUrl}</loc>
-            <lastmod>${SEO_CONFIG.sitemapLastmod}</lastmod>
-          </url>
-        </urlset>`
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
     });
 
-    await expect(
-      runVerifier(fixtureDir, { VITE_BASE_PATH: GITHUB_PAGES_BASE_PATH })
-    ).resolves.toMatchObject({
+    await expect(runVerifier(fixtureDir)).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        "dist/index.html asset URL does not point to /FrameYourTrail/assets/: /assets/index-abcdefgh.js"
+      )
+    });
+  });
+
+  it("rejects root-relative modulepreload links with token-list rel values", async () => {
+    const fixtureDir = await createDistFixture({
+      indexHtml: `<!doctype html>
+        <html lang="en">
+          <head>
+            <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
+            <link rel="manifest" href="${GITHUB_PAGES_BASE_PATH}site.webmanifest" />
+            <link rel="icon" href="${GITHUB_PAGES_BASE_PATH}icon.svg" />
+            <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
+            <meta property="og:image" content="${getSocialPreviewUrl()}" />
+            <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
+            <script type="application/ld+json">
+              { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
+            </script>
+            <script type="module" crossorigin src="${GITHUB_PAGES_BASE_PATH}assets/index-abcdefgh.js"></script>
+            <link rel="preload modulepreload" crossorigin href="/assets/chunk-abcdefgh.js" />
+            <link rel="stylesheet" crossorigin href="${GITHUB_PAGES_BASE_PATH}assets/index-abcdefgh.css" />
+          </head>
+          <body></body>
+        </html>`,
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
+    });
+
+    await expect(runVerifier(fixtureDir)).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        "dist/index.html asset URL does not point to /FrameYourTrail/assets/: /assets/chunk-abcdefgh.js"
+      )
+    });
+  });
+
+  it("rejects root-relative stylesheet links regardless of rel casing", async () => {
+    const fixtureDir = await createDistFixture({
+      indexHtml: `<!doctype html>
+        <html lang="en">
+          <head>
+            <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
+            <link rel="manifest" href="${GITHUB_PAGES_BASE_PATH}site.webmanifest" />
+            <link rel="icon" href="${GITHUB_PAGES_BASE_PATH}icon.svg" />
+            <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
+            <meta property="og:image" content="${getSocialPreviewUrl()}" />
+            <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
+            <script type="application/ld+json">
+              { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
+            </script>
+            <script type="module" crossorigin src="${GITHUB_PAGES_BASE_PATH}assets/index-abcdefgh.js"></script>
+            <link rel="modulepreload" crossorigin href="${GITHUB_PAGES_BASE_PATH}assets/chunk-abcdefgh.js" />
+            <link rel="StyleSheet" crossorigin href="/assets/index-abcdefgh.css" />
+          </head>
+          <body></body>
+        </html>`,
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
+    });
+
+    await expect(runVerifier(fixtureDir)).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        "dist/index.html asset URL does not point to /FrameYourTrail/assets/: /assets/index-abcdefgh.css"
+      )
+    });
+  });
+
+  it("accepts root-hosted entry asset links when VITE_BASE_PATH is root", async () => {
+    const fixtureDir = await createDistFixture({
+      indexHtml: `<!doctype html>
+        <html lang="en">
+          <head>
+            <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
+            <link rel="manifest" href="/site.webmanifest" />
+            <link rel="icon" href="/icon.svg" />
+            <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
+            <meta property="og:image" content="${getSocialPreviewUrl()}" />
+            <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
+            <script type="application/ld+json">
+              { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
+            </script>
+            <script type="module" crossorigin src="/assets/index-abcdefgh.js"></script>
+            <link rel="modulepreload" crossorigin href="/assets/chunk-abcdefgh.js" />
+            <link rel="stylesheet" crossorigin href="/assets/index-abcdefgh.css" />
+          </head>
+          <body></body>
+        </html>`,
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
+    });
+
+    await expect(runVerifier(fixtureDir, { VITE_BASE_PATH: "/" })).resolves.toMatchObject({
       stdout: expect.stringContaining("Verified production SEO discovery assets and canonical URLs")
+    });
+  });
+
+  it("rejects stale subpath entry asset links when VITE_BASE_PATH is root", async () => {
+    const fixtureDir = await createDistFixture({
+      indexHtml: `<!doctype html>
+        <html lang="en">
+          <head>
+            <link rel="canonical" href="${SEO_CONFIG.canonicalUrl}" />
+            <link rel="manifest" href="/site.webmanifest" />
+            <link rel="icon" href="/icon.svg" />
+            <meta property="og:url" content="${SEO_CONFIG.canonicalUrl}" />
+            <meta property="og:image" content="${getSocialPreviewUrl()}" />
+            <meta name="twitter:image" content="${getSocialPreviewUrl()}" />
+            <script type="application/ld+json">
+              { "@context": "https://schema.org", "@type": "WebApplication", "url": "${SEO_CONFIG.canonicalUrl}" }
+            </script>
+            <script type="module" crossorigin src="${GITHUB_PAGES_BASE_PATH}assets/index-abcdefgh.js"></script>
+            <link rel="modulepreload" crossorigin href="/assets/chunk-abcdefgh.js" />
+            <link rel="stylesheet" crossorigin href="/assets/index-abcdefgh.css" />
+          </head>
+          <body></body>
+        </html>`,
+      extraAssets: {
+        "index-abcdefgh.js": "import './chunk-abcdefgh.js';",
+        "chunk-abcdefgh.js": "export {};",
+        "index-abcdefgh.css": "body { color: black; }"
+      }
+    });
+
+    await expect(runVerifier(fixtureDir, { VITE_BASE_PATH: "/" })).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        "dist/index.html asset URL does not point to /assets/: /FrameYourTrail/assets/index-abcdefgh.js"
+      )
     });
   });
 
@@ -257,7 +447,7 @@ async function createDistFixture({
   includeXmlParserHelperAsset = true,
   includeTimerEventTypeAsset = true,
   extraAssets = {}
-}) {
+} = {}) {
   const fixtureDir = await mkdtemp(join(tmpdir(), "frame-your-trail-build-verifier-"));
   const distDir = join(fixtureDir, "dist");
   const assetsDir = join(distDir, "assets");
@@ -270,20 +460,27 @@ async function createDistFixture({
   const timerEventTypeAsset = "timer-event-types-abcdefgh.js";
   const gpxParserAsset = "gpx-parser-mno.js";
   const fitParserAsset = "fit-parser-jkl.js";
+  const entryAsset = "entry-main-abcdefgh.js";
+  const entryPreloadAsset = "entry-preload-abcdefgh.js";
+  const entryStylesheetAsset = "entry-main-abcdefgh.css";
+  const publicAssetBasePath = getSiteBasePath();
   const html =
     indexHtml ??
     `<!doctype html>
       <html lang="en">
         <head>
           <link rel="canonical" href="${canonicalUrl}" />
-          <link rel="manifest" href="/site.webmanifest" />
-          <link rel="icon" href="/icon.svg" />
+          <link rel="manifest" href="${publicAssetBasePath}site.webmanifest" />
+          <link rel="icon" href="${publicAssetBasePath}icon.svg" />
           <meta property="og:url" content="${canonicalUrl}" />
           <meta property="og:image" content="${socialImageUrl}" />
           <meta name="twitter:image" content="${socialImageUrl}" />
           <script type="application/ld+json">
             { "@context": "https://schema.org", "@type": "WebApplication", "url": "${canonicalUrl}" }
           </script>
+          <script type="module" crossorigin src="${publicAssetBasePath}assets/${entryAsset}"></script>
+          <link rel="modulepreload" crossorigin href="${publicAssetBasePath}assets/${entryPreloadAsset}" />
+          <link rel="stylesheet" crossorigin href="${publicAssetBasePath}assets/${entryStylesheetAsset}" />
         </head>
         <body></body>
       </html>`;
@@ -318,6 +515,9 @@ async function createDistFixture({
       `import "./${coreAsset}"; import "./${fitParserAsset}";`
     ),
     writeFile(join(assetsDir, workerClientAsset), `new Worker("${workerAsset}")`),
+    writeFile(join(assetsDir, entryAsset), `import "./${entryPreloadAsset}";`),
+    writeFile(join(assetsDir, entryPreloadAsset), "export {};"),
+    writeFile(join(assetsDir, entryStylesheetAsset), "body { color: black; }"),
     writeFile(
       join(assetsDir, pipelineAsset),
       `import "./${coreAsset}"; import "./${fitParserAsset}";`

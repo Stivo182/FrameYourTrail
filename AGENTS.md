@@ -44,7 +44,7 @@
 - Install dependencies with `npm ci`.
 - Start the local dev server with `npm run dev`; by default it serves `http://127.0.0.1:5173/`.
 - Create a production build with `npm run build`.
-- Preview the production build with `npm run preview`; by default open `http://127.0.0.1:4173/`. If the build was created with `VITE_BASE_PATH=/FrameYourTrail/`, open `http://127.0.0.1:4173/FrameYourTrail/`.
+- Preview the production build with `npm run preview`; by default open `http://127.0.0.1:4173/FrameYourTrail/`, matching `site.config.json`. If the build was created with `VITE_BASE_PATH=/`, open `http://127.0.0.1:4173/`.
 - Run the full verification suite with `npm run verify` before finishing when
   feasible for code changes. For docs-only or instruction-only changes, tests
   are not required; state that they were skipped because code did not change.

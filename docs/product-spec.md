@@ -1,6 +1,6 @@
 # Frame Your Trail Current Specification
 
-Date: 2026-05-26
+Date: 2026-06-22
 Status: Current source of truth
 
 This document is the living product and architecture specification for Frame Your
@@ -60,9 +60,11 @@ Out of scope:
 
 ## Deployment And SEO
 
-Frame Your Trail is deployable as a static Vite app. Vite builds use `/` by
-default. GitHub project Pages builds use `VITE_BASE_PATH=/FrameYourTrail/` and
-publish to `https://<owner>.github.io/FrameYourTrail/`.
+Frame Your Trail is deployable as a static Vite app. Production builds derive
+their default base path from the canonical URL in `site.config.json`; the current
+GitHub project Pages path is `/FrameYourTrail/` and publishes to
+`https://<owner>.github.io/FrameYourTrail/`. Set `VITE_BASE_PATH` only when a
+build needs to override that canonical deployment path.
 
 If the repository name, Pages URL shape, base path, or custom domain changes,
 keep these files/configs synchronized:
@@ -88,13 +90,13 @@ override them with:
 - `FRAME_YOUR_TRAIL_SITE_CONFIG`
 
 Production build-output checks must verify that canonical links, social preview
-metadata, `robots.txt`, and `sitemap.xml` are consistent.
+metadata, local script/style asset links, `robots.txt`, and `sitemap.xml` are
+consistent with the configured public base path.
 
 The GitHub Pages workflow must run the full `npm run verify` quality gate before
 building and publishing the Pages artifact. The deploy artifact is then rebuilt
-with `VITE_BASE_PATH=/FrameYourTrail/` and checked with `npm run test:build`
-using the same base path, followed by `npm run test:pages` browser smoke testing
-against the Pages subpath.
+with the canonical site base path and checked with `npm run test:build`, followed
+by `npm run test:pages` browser smoke testing against the Pages subpath.
 
 The Pages `verify` job runs on Windows to match the committed Windows Chromium
 visual snapshot baseline. The Pages `build` and `deploy` jobs remain on Ubuntu.

@@ -52,6 +52,13 @@ export function getSocialPreviewUrl(config = SEO_CONFIG) {
 }
 
 /**
+ * @param {{ canonicalUrl: string }} [config]
+ */
+export function getSiteBasePath(config = SEO_CONFIG) {
+  return normalizeBasePath(new URL(config.canonicalUrl).pathname);
+}
+
+/**
  * @param {string} html
  * @param {{ socialPreviewFile: string, canonicalUrl: string }} [config]
  */
@@ -116,6 +123,14 @@ function normalizeCanonicalUrl(value) {
   }
 
   return url.href;
+}
+
+/**
+ * @param {string} value
+ */
+function normalizeBasePath(value) {
+  const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
 /**

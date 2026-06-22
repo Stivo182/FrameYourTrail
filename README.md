@@ -72,7 +72,9 @@ npm run build
 npm run preview
 ```
 
-Production preview defaults to `http://127.0.0.1:4173/`.
+Production preview defaults to `http://127.0.0.1:4173/FrameYourTrail/`, matching
+the canonical GitHub Pages path from `site.config.json`. Set `VITE_BASE_PATH=/`
+for a root-hosted production build.
 
 ## Documentation
 

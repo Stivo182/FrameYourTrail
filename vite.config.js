@@ -1,5 +1,10 @@
 import { defineConfig } from "vitest/config";
-import { applySeoPlaceholders, renderRobotsTxt, renderSitemapXml } from "./scripts/seo-config.mjs";
+import {
+  applySeoPlaceholders,
+  getSiteBasePath,
+  renderRobotsTxt,
+  renderSitemapXml
+} from "./scripts/seo-config.mjs";
 
 function routeParserChunks(id) {
   const normalizedId = id.replaceAll("\\", "/");
@@ -76,8 +81,16 @@ function seoDiscoveryPlugin() {
   };
 }
 
-export default defineConfig({
-  base: process.env.VITE_BASE_PATH || "/",
+export function resolveViteBasePath(command = "build", isPreview = false) {
+  if (process.env.VITE_BASE_PATH) {
+    return process.env.VITE_BASE_PATH;
+  }
+
+  return command === "serve" && !isPreview ? "/" : getSiteBasePath();
+}
+
+export default defineConfig(({ command, isPreview }) => ({
+  base: resolveViteBasePath(command, isPreview),
   plugins: [seoDiscoveryPlugin()],
   build: {
     // MapLibre is lazy-loaded as a dedicated map engine chunk.
@@ -104,4 +117,4 @@ export default defineConfig({
     environment: "jsdom",
     include: ["tests/unit/**/*.test.js"]
   }
-});
+}));

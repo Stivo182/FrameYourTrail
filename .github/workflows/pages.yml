@@ -48,21 +48,18 @@ jobs:
 
       - name: Build
         env:
-          VITE_BASE_PATH: /FrameYourTrail/
+          VITE_BASE_PATH: ""
         run: npm run build
 
       - name: Test production build output
         env:
-          VITE_BASE_PATH: /FrameYourTrail/
+          VITE_BASE_PATH: ""
         run: npm run test:build
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Browser smoke production Pages build
-        env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/FrameYourTrail/
-          PLAYWRIGHT_DEV_COMMAND: npm run preview -- --host 127.0.0.1
         run: npm run test:pages
 
       - name: Configure Pages
