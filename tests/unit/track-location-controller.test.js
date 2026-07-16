@@ -57,7 +57,7 @@ function createHarness(overrides = {}) {
     ...overrides.state
   });
   let currentSourceToken = overrides.sourceToken ?? 1;
-  let exportActive = overrides.exportActive ?? false;
+  let posterOutputActive = overrides.posterOutputActive ?? false;
   const renderApp = vi.fn();
   const setState = vi.fn((nextState) => {
     currentState = createState(nextState);
@@ -71,7 +71,7 @@ function createHarness(overrides = {}) {
     reverseGeocodeTrackLocation,
     isCurrentSourceRequest: (token) => token === currentSourceToken,
     getCurrentSourceRequestToken: () => currentSourceToken,
-    isExportActive: () => exportActive
+    isPosterOutputActive: () => posterOutputActive
   });
 
   return {
@@ -82,8 +82,8 @@ function createHarness(overrides = {}) {
     setSourceToken: (token) => {
       currentSourceToken = token;
     },
-    setExportActive: (active) => {
-      exportActive = active;
+    setPosterOutputActive: (active) => {
+      posterOutputActive = active;
     },
     setCurrentState: (nextState) => {
       currentState = createState(nextState);
@@ -150,39 +150,39 @@ describe("track location controller", () => {
     expect(harness.renderApp).not.toHaveBeenCalled();
   });
 
-  it("defers render while export is active and flushes it after export", async () => {
-    const harness = createHarness({ exportActive: true });
+  it("defers render while poster output is active and flushes it afterwards", async () => {
+    const harness = createHarness({ posterOutputActive: true });
 
     await harness.controller.request(parsedTrack, "en");
 
     expect(harness.setState).toHaveBeenCalledOnce();
     expect(harness.renderApp).not.toHaveBeenCalled();
 
-    harness.setExportActive(false);
-    harness.controller.renderPendingAfterExport();
-    harness.controller.renderPendingAfterExport();
+    harness.setPosterOutputActive(false);
+    harness.controller.renderPendingAfterPosterOutput();
+    harness.controller.renderPendingAfterPosterOutput();
 
     expect(harness.renderApp).toHaveBeenCalledOnce();
   });
 
-  it("clears pending render when invalidated before export finishes", async () => {
-    const harness = createHarness({ exportActive: true });
+  it("clears pending render when invalidated before poster output finishes", async () => {
+    const harness = createHarness({ posterOutputActive: true });
 
     await harness.controller.request(parsedTrack, "en");
     harness.controller.invalidate();
-    harness.setExportActive(false);
-    harness.controller.renderPendingAfterExport();
+    harness.setPosterOutputActive(false);
+    harness.controller.renderPendingAfterPosterOutput();
 
     expect(harness.renderApp).not.toHaveBeenCalled();
   });
 
   it("skips pending render when poster state is incomplete", async () => {
-    const harness = createHarness({ exportActive: true });
+    const harness = createHarness({ posterOutputActive: true });
 
     await harness.controller.request(parsedTrack, "en");
     harness.setCurrentState({ ...harness.getState(), analysis: null });
-    harness.setExportActive(false);
-    harness.controller.renderPendingAfterExport();
+    harness.setPosterOutputActive(false);
+    harness.controller.renderPendingAfterPosterOutput();
 
     expect(harness.renderApp).not.toHaveBeenCalled();
   });

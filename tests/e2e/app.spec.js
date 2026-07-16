@@ -9,6 +9,7 @@ import {
 
 const STORAGE_KEY = "frame-your-trail-language";
 const EXPECTED_EXPORT_PNG_SIZE = { width: 2480, height: 3508 };
+const A4_PRINT_PAGE_CSS_PIXELS = { width: 794, height: 1123 };
 
 test.beforeEach(async ({ page }) => {
   await abortBigDataCloudReverseGeocoding(page);
@@ -422,6 +423,84 @@ test("closes other command bar selectors when opening the export menu", async ({
   await languageMenu.locator("summary").click();
   await expect(languageMenu).toHaveAttribute("open", "");
   await expect(exportMenu).not.toHaveAttribute("open", "");
+});
+
+test("prints the rendered poster from a separate toolbar action", async ({ page }) => {
+  await useSavedLanguage(page, "en");
+  await abortOpenFreeMapTiles(page);
+  await page.addInitScript(() => {
+    const probeWindow = /** @type {Window & { __printCalls?: number }} */ (window);
+    probeWindow.__printCalls = 0;
+    Object.defineProperty(window, "print", {
+      configurable: true,
+      value: () => {
+        probeWindow.__printCalls = (probeWindow.__printCalls ?? 0) + 1;
+      }
+    });
+  });
+
+  let mapRequestCount = 0;
+  /** @type {() => void} */
+  let releaseMap = () => {};
+  const mapRelease = new Promise((resolve) => {
+    releaseMap = () => resolve(undefined);
+  });
+
+  await page.route("**/src/render/map.js**", async (route) => {
+    mapRequestCount += 1;
+    await mapRelease;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await uploadFixture(page);
+  await expect.poll(() => mapRequestCount).toBe(1);
+  await expect(page.locator("[data-static-route]")).toHaveCount(0);
+
+  const exportMenu = page.locator("[data-export-menu]");
+  const printButton = page.getByRole("button", { name: "Print" });
+
+  await expect(printButton).toBeVisible();
+  await exportMenu.locator("summary").click();
+  await expect(exportMenu).toHaveAttribute("open", "");
+
+  await printButton.click();
+  await printButton.click();
+
+  await expect(exportMenu).not.toHaveAttribute("open", "");
+  await page.waitForTimeout(250);
+  expect(await getPrintCallCount(page)).toBe(0);
+
+  releaseMap();
+
+  await expect(page.locator("[data-static-route]")).toBeVisible();
+  await expect.poll(() => getPrintCallCount(page)).toBe(1);
+
+  await printButton.click();
+  await expect.poll(() => getPrintCallCount(page)).toBe(2);
+
+  await page.setViewportSize(A4_PRINT_PAGE_CSS_PIXELS);
+  await page.emulateMedia({ media: "print" });
+
+  await expect(page.locator(".toolbar")).toHaveCSS("display", "none");
+  await expect(page.locator(".app-shell")).toHaveCSS("padding-top", "0px");
+  await expect(page.locator(".poster-scroll")).toHaveCSS("overflow-x", "visible");
+  await expect(page.locator(".poster-scroll")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".poster-preview-frame")).toHaveCSS("overflow-x", "hidden");
+  await expect(page.locator(".poster-preview-scale")).not.toHaveCSS("transform", "none");
+  await expect(page.locator(".infographic")).toBeVisible();
+  await expect(page.locator(".infographic")).toHaveCSS("display", "grid");
+
+  const printPosterBox = await page.locator(".infographic").boundingBox();
+
+  if (!printPosterBox) {
+    throw new Error("Printed poster is not measurable");
+  }
+
+  expect(printPosterBox.width).toBeLessThanOrEqual(A4_PRINT_PAGE_CSS_PIXELS.width + 1);
+  expect(printPosterBox.height).toBeLessThanOrEqual(A4_PRINT_PAGE_CSS_PIXELS.height + 1);
+
+  await page.emulateMedia({ media: "screen" });
 });
 
 test("accepts GPX, TCX, and FIT files in the upload control", async ({ page }) => {
@@ -1676,6 +1755,67 @@ test("keeps export active when track location resolves during pending render wor
   );
 });
 
+test("keeps print active when track location resolves during pending render work", async ({
+  page
+}) => {
+  await useSavedLanguage(page, "en");
+  await abortOpenFreeMapTiles(page);
+  await page.unroute(BIGDATACLOUD_REVERSE_GEOCODE_PATTERN);
+  await page.addInitScript(() => {
+    const probeWindow = /** @type {Window & { __printCalls?: number }} */ (window);
+    probeWindow.__printCalls = 0;
+    Object.defineProperty(window, "print", {
+      configurable: true,
+      value: () => {
+        probeWindow.__printCalls = (probeWindow.__printCalls ?? 0) + 1;
+      }
+    });
+  });
+
+  let releaseLocationResponse = () => {};
+  const locationResponseRelease = new Promise((resolve) => {
+    releaseLocationResponse = () => resolve(undefined);
+  });
+
+  await page.route(BIGDATACLOUD_REVERSE_GEOCODE_PATTERN, async (route) => {
+    await locationResponseRelease;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        principalSubdivision: "Print Region",
+        countryName: "Print Country"
+      })
+    });
+  });
+
+  let chartRequestCount = 0;
+  let releaseCharts = () => {};
+  const chartsRelease = new Promise((resolve) => {
+    releaseCharts = () => resolve(undefined);
+  });
+
+  await page.route("**/src/render/elevation-chart.js**", async (route) => {
+    chartRequestCount += 1;
+    await chartsRelease;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await uploadFixture(page);
+  await expect.poll(() => chartRequestCount).toBe(1);
+
+  await page.getByRole("button", { name: "Print" }).click();
+  await page.waitForTimeout(250);
+  releaseLocationResponse();
+  await page.waitForTimeout(250);
+  releaseCharts();
+
+  await expect.poll(() => getPrintCallCount(page)).toBe(1);
+  await expect(page.locator(".poster-header__location")).toContainText(
+    "Print Region, Print Country"
+  );
+});
+
 test("keeps upload shell usable while lazy poster renderer is loading before export", async ({
   page
 }) => {
@@ -2301,6 +2441,17 @@ async function useSavedLanguage(page, language) {
     },
     { storageKey: STORAGE_KEY, value: language }
   );
+}
+
+/**
+ * @param {import("@playwright/test").Page} page
+ */
+async function getPrintCallCount(page) {
+  return page.evaluate(() => {
+    const probeWindow = /** @type {Window & { __printCalls?: number }} */ (window);
+
+    return probeWindow.__printCalls ?? 0;
+  });
 }
 
 /**

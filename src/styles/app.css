@@ -133,7 +133,8 @@
 .language-menu,
 .metric-source-menu,
 .map-style-menu,
-.export-menu {
+.export-menu,
+.print-button {
   position: relative;
   max-inline-size: calc(100vw - 48px);
   color: var(--color-ink);
@@ -156,12 +157,12 @@
 .language-menu summary,
 .metric-source-menu summary,
 .map-style-menu summary,
-.export-menu summary {
+.export-menu summary,
+.print-button {
   display: inline-flex;
   min-block-size: 36px;
   align-items: center;
   gap: 4px;
-  width: 100%;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: #f8fafc;
@@ -169,6 +170,29 @@
   font-weight: 800;
   list-style: none;
   padding: 0 10px;
+}
+
+.language-menu summary,
+.metric-source-menu summary,
+.map-style-menu summary,
+.export-menu summary {
+  width: 100%;
+}
+
+.print-button {
+  justify-content: center;
+  inline-size: 38px;
+  min-inline-size: 38px;
+  font-family: inherit;
+  font-weight: 800;
+  padding: 0;
+}
+
+.print-button svg {
+  display: block;
+  inline-size: 19px;
+  block-size: 19px;
+  flex: 0 0 auto;
 }
 
 .language-menu summary::-webkit-details-marker,
@@ -336,7 +360,8 @@
 .language-menu summary:hover,
 .metric-source-menu summary:hover,
 .map-style-menu summary:hover,
-.export-menu summary:hover {
+.export-menu summary:hover,
+.print-button:hover {
   border-color: #cbd5e1;
   background: var(--color-panel);
 }
@@ -349,7 +374,8 @@
 .map-style-menu summary:focus-visible,
 .map-style-menu__option input:focus-visible,
 .export-menu summary:focus-visible,
-.export-menu__option:focus-visible {
+.export-menu__option:focus-visible,
+.print-button:focus-visible {
   outline: 3px solid rgb(15 118 110 / 24%);
   outline-offset: 2px;
 }
@@ -421,5 +447,70 @@
     inset-inline: 0 auto;
     inline-size: min(100%, calc(100vw - 48px));
     min-inline-size: 0;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .app-shell {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .toolbar,
+  .messages,
+  .empty-state {
+    display: none;
+  }
+
+  .workspace {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+
+  .poster-scroll,
+  .app-shell--has-poster .poster-scroll {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .poster-preview-frame {
+    --print-poster-scale: min(
+      calc(100vw / var(--poster-width)),
+      calc(100vh / var(--poster-height))
+    );
+
+    overflow: hidden;
+    width: calc(var(--poster-width) * var(--print-poster-scale));
+    height: calc(var(--poster-height) * var(--print-poster-scale));
+    margin: 0;
+  }
+
+  .poster-preview-scale {
+    width: var(--poster-width);
+    min-height: var(--poster-height);
+    transform: scale(var(--print-poster-scale));
+    transform-origin: top left;
+  }
+
+  .infographic {
+    margin: 0;
   }
 }

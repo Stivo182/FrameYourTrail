@@ -169,6 +169,14 @@ describe("i18n", () => {
     expect(LOCALES.de.site.clipboard).toBe("Zwischenablage");
   });
 
+  it("uses localized toolbar print labels", () => {
+    expect(LOCALES.ru.site.printPoster).toBe("Печать");
+    expect(LOCALES.en.site.printPoster).toBe("Print");
+    expect(LOCALES.es.site.printPoster).toBe("Imprimir");
+    expect(LOCALES.fr.site.printPoster).toBe("Imprimer");
+    expect(LOCALES.de.site.printPoster).toBe("Drucken");
+  });
+
   it("uses format-neutral text for shared track diagnostics and analysis modes", () => {
     const sharedTrackKeys = [
       "messages.emptyTrack",

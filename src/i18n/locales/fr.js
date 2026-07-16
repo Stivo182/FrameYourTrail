@@ -7,6 +7,7 @@ const fr = {
     exportAria: "Export du poster",
     exportLabel: "Exporter :",
     clipboard: "Presse-papiers",
+    printPoster: "Imprimer",
     emptyTitle: "Importez un fichier d'itinéraire pour créer une infographie",
     emptyBody:
       "Carte, statistiques, graphiques et export seront disponibles après l'analyse du fichier.",
