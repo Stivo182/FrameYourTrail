@@ -548,14 +548,33 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
   return [
     {
       ...layerObject,
-      ...(Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)
-        ? { minzoom: OPENFREEMAP_ROAD_LABEL_MINZOOMS[id] }
-        : id === "waterway_line_label"
-          ? { minzoom: 12 }
-          : {}),
+      ...getPosterLayerZoomOverrides(id, layerObject.minzoom),
       paint
     }
   ];
+}
+
+/**
+ * @param {string} id
+ * @param {unknown} minzoom
+ */
+function getPosterLayerZoomOverrides(id, minzoom) {
+  if (Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)) {
+    return { minzoom: OPENFREEMAP_ROAD_LABEL_MINZOOMS[id] };
+  }
+
+  if (id === "waterway_line_label") {
+    return { minzoom: Math.min(getNumericMinzoom(minzoom), 12) };
+  }
+
+  return {};
+}
+
+/**
+ * @param {unknown} minzoom
+ */
+function getNumericMinzoom(minzoom) {
+  return Number.isFinite(minzoom) ? Number(minzoom) : 12;
 }
 
 /**

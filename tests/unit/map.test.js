@@ -216,7 +216,7 @@ const openFreeMapStyle = {
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "waterway",
-      minzoom: 13,
+      minzoom: 10,
       layout: {
         "symbol-placement": "line",
         "text-field": ["get", "name"],
@@ -1116,7 +1116,7 @@ describe("map helpers", () => {
     expect(layerPaint("waterway_river")?.["line-color"]).toBe("#7ba8a8");
     expect(layerPaint("waterway_other")?.["line-color"]).toBe("#7ba8a8");
     expect(layer("waterway_line_label")).toMatchObject({
-      minzoom: 12,
+      minzoom: 10,
       paint: {
         "text-color": "#416b73",
         "text-halo-color": "#fbfaf3",
