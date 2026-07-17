@@ -19,6 +19,11 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   labelHalo: "#fbfaf3"
 });
 
+const POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS = new Set([
+  "landcover_wetland",
+  "road_area_pattern"
+]);
+
 export const MAP_STYLE_OPTIONS = Object.freeze([
   Object.freeze({
     id: DEFAULT_MAP_STYLE_ID,
@@ -317,9 +322,15 @@ function applyPosterBackgroundMapPaletteToLayer(layer) {
   if (type === "background") {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
+    const preservedFillPattern = getPosterFillPattern(id, paint);
+
     paint["fill-color"] = getPosterFillColor(layerKey);
     delete paint["fill-outline-color"];
     delete paint["fill-pattern"];
+
+    if (preservedFillPattern) {
+      paint["fill-pattern"] = preservedFillPattern;
+    }
   } else if (type === "fill-extrusion") {
     paint["fill-extrusion-color"] = POSTER_BACKGROUND_MAP_PALETTE.building;
   } else if (type === "line") {
@@ -344,6 +355,18 @@ function applyPosterBackgroundMapPaletteToLayer(layer) {
     ...layerObject,
     paint
   };
+}
+
+/**
+ * @param {string} layerId
+ * @param {Record<string, unknown>} paint
+ */
+function getPosterFillPattern(layerId, paint) {
+  const fillPattern = paint["fill-pattern"];
+
+  return POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS.has(layerId) && typeof fillPattern === "string"
+    ? fillPattern
+    : null;
 }
 
 /**

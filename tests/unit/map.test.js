@@ -741,10 +741,12 @@ describe("map helpers", () => {
     });
     expect(layerPaint("water")?.["fill-color"]).toBe("#d6e3e0");
     expect(layerPaint("landcover_wetland")).toEqual({
-      "fill-color": "#d7dfd0"
+      "fill-color": "#d7dfd0",
+      "fill-pattern": "wetland_bg_11"
     });
     expect(layerPaint("road_area_pattern")).toEqual({
-      "fill-color": "#f0eee3"
+      "fill-color": "#f0eee3",
+      "fill-pattern": "pedestrian_polygon"
     });
     expect(layerPaint("building")?.["fill-color"]).toBe("#e3ded2");
     expect(layerPaint("road-minor")?.["line-color"]).toBe("#ddd5c5");

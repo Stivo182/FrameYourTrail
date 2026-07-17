@@ -553,10 +553,10 @@ Map requirements:
   remains visible
 - road, trail, path, and track layers stay visually distinct within the poster
   palette
-- external fill patterns, including wetland and landcover patterns, are
-  neutralized in the default vector palette
-- external fill outlines are neutralized or removed, and external park or
-  aeroway line patterns use the poster palette
+- selected OpenFreeMap fill patterns, including wetland and pedestrian-area
+  patterns, are preserved when they improve map detail
+- unrelated external fill patterns and external fill outlines are neutralized
+  or removed, and external park or aeroway line patterns use the poster palette
 - white route halo
 - speed-colored route line when usable speed data is available
 - single route color when speed data is unavailable or unusable
