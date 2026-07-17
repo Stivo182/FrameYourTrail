@@ -285,6 +285,54 @@ const openFreeMapStyle = {
         "text-color": "#1f2937",
         "text-halo-color": "#ffffff"
       }
+    },
+    {
+      id: "highway-name-major",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      minzoom: 12,
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 12
+      },
+      paint: {
+        "text-color": "#374151",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
+      id: "highway-name-minor",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      minzoom: 14,
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 11
+      },
+      paint: {
+        "text-color": "#4b5563",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
+      id: "highway-name-path",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      minzoom: 15,
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 10
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff"
+      }
     }
   ]
 };
@@ -455,6 +503,105 @@ describe("map helpers", () => {
     });
     expect(layerIndex("poster-park-label")).toBeGreaterThan(layerIndex("place-label"));
     expect(layerIndex("poster-mountain-peak-label")).toBeGreaterThan(layerIndex("place-label"));
+    expect(layer("poster-landcover-label")).toBeUndefined();
+    expect(layer("poster-landuse-label")).toBeUndefined();
+  });
+
+  it("adds poster OpenFreeMap trail and aerialway transport detail without duplicating road labels", async () => {
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const openFreeMapNameTextField = [
+      "case",
+      ["has", "name:nonlatin"],
+      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
+      ["coalesce", ["get", "name_en"], ["get", "name"]]
+    ];
+    const posterLabelPaint = {
+      "text-color": "#5f6c61",
+      "text-halo-color": "#fbfaf3",
+      "text-halo-width": 1
+    };
+
+    expect(layer("poster-trail-line")).toMatchObject({
+      id: "poster-trail-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["==", ["geometry-type"], "LineString"],
+        ["match", ["get", "class"], ["path", "track"], true, false]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#8f8b63",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.45, 14, 1.1, 16, 1.6],
+        "line-dasharray": [1.2, 1.1],
+        "line-opacity": 0.78
+      }
+    });
+    expect(layer("poster-aerialway-line")).toMatchObject({
+      id: "poster-aerialway-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["==", ["geometry-type"], "LineString"],
+        ["==", ["get", "class"], "aerialway"]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#9f9a8d",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.4, 14, 0.9, 16, 1.25],
+        "line-dasharray": [0.7, 1.3],
+        "line-opacity": 0.82
+      }
+    });
+    expect(layerIndex("poster-trail-line")).toBeGreaterThan(layerIndex("aeroway-taxiway"));
+    expect(layerIndex("poster-aerialway-line")).toBeGreaterThan(layerIndex("poster-trail-line"));
+    expect(layerIndex("poster-aerialway-line")).toBeLessThan(layerIndex("place-label"));
+    expect(layerIndex("poster-trail-line")).toBeLessThan(layerIndex("highway-name-major"));
+
+    expect(layer("poster-aerialway-label")).toMatchObject({
+      id: "poster-aerialway-label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]],
+      layout: expect.objectContaining({
+        "symbol-placement": "line",
+        "text-field": openFreeMapNameTextField,
+        "text-size": 10
+      }),
+      paint: posterLabelPaint
+    });
+    expect(layerIndex("poster-aerialway-label")).toBeGreaterThan(layerIndex("highway-name-path"));
+
+    expect(layer("highway-name-major")).toMatchObject({
+      minzoom: 10,
+      paint: posterLabelPaint
+    });
+    expect(layer("highway-name-minor")).toMatchObject({
+      minzoom: 11,
+      paint: posterLabelPaint
+    });
+    expect(layer("highway-name-path")).toMatchObject({
+      minzoom: 12,
+      paint: posterLabelPaint
+    });
+    expect(style.layers.filter((styleLayer) => /^poster-highway-name/.test(styleLayer.id))).toEqual(
+      []
+    );
     expect(layer("poster-landcover-label")).toBeUndefined();
     expect(layer("poster-landuse-label")).toBeUndefined();
   });

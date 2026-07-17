@@ -14,6 +14,7 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   building: "#e3ded2",
   road: "#ddd5c5",
   trail: "#8f8b63",
+  aerialway: "#9f9a8d",
   boundary: "#b7b1a4",
   label: "#5f6c61",
   labelHalo: "#fbfaf3"
@@ -44,8 +45,23 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
     id: "poster-mountain-peak-label",
     sourceLayer: "mountain_peak",
     textSize: 10
+  }),
+  Object.freeze({
+    id: "poster-aerialway-label",
+    sourceLayer: "transportation_name",
+    textSize: 10,
+    filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]],
+    layout: {
+      "symbol-placement": "line"
+    }
   })
 ]);
+
+const OPENFREEMAP_ROAD_LABEL_MINZOOMS = Object.freeze({
+  "highway-name-major": 10,
+  "highway-name-minor": 11,
+  "highway-name-path": 12
+});
 
 export const MAP_STYLE_OPTIONS = Object.freeze([
   Object.freeze({
@@ -313,30 +329,106 @@ function applyPosterBackgroundMapPalette(style) {
     return { ...styleObject };
   }
 
+  const posterLayers = styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers);
+
   return {
     ...styleObject,
-    layers: [
-      ...styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers),
-      ...createSupplementalPosterLabelLayers()
-    ]
+    layers: insertSupplementalPosterTransportLayers(posterLayers)
   };
 }
 
 function createSupplementalPosterLabelLayers() {
-  return SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS.map(({ id, sourceLayer, textSize }) => ({
-    id,
-    type: "symbol",
-    source: "openmaptiles",
-    "source-layer": sourceLayer,
-    filter: ["has", "name"],
-    layout: {
-      "text-field": OPENFREEMAP_NAME_TEXT_FIELD,
-      "text-font": ["Noto Sans Regular"],
-      "text-size": textSize,
-      "text-max-width": 8
+  return SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS.map((definition) => {
+    const { id, sourceLayer, textSize } = definition;
+    const filter = "filter" in definition ? definition.filter : ["has", "name"];
+    const layout = "layout" in definition ? definition.layout : {};
+
+    return {
+      id,
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": sourceLayer,
+      filter,
+      layout: {
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD,
+        "text-font": ["Noto Sans Regular"],
+        "text-size": textSize,
+        "text-max-width": 8,
+        ...layout
+      },
+      paint: SUPPLEMENTAL_POSTER_LABEL_PAINT
+    };
+  });
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function insertSupplementalPosterTransportLayers(layers) {
+  const insertionIndex = getSupplementalPosterTransportInsertionIndex(layers);
+
+  return [
+    ...layers.slice(0, insertionIndex),
+    ...createSupplementalPosterTransportLineLayers(),
+    ...layers.slice(insertionIndex),
+    ...createSupplementalPosterLabelLayers()
+  ];
+}
+
+function createSupplementalPosterTransportLineLayers() {
+  return [
+    {
+      id: "poster-trail-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["==", ["geometry-type"], "LineString"],
+        ["match", ["get", "class"], ["path", "track"], true, false]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": POSTER_BACKGROUND_MAP_PALETTE.trail,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.45, 14, 1.1, 16, 1.6],
+        "line-dasharray": [1.2, 1.1],
+        "line-opacity": 0.78
+      }
     },
-    paint: SUPPLEMENTAL_POSTER_LABEL_PAINT
-  }));
+    {
+      id: "poster-aerialway-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["==", ["geometry-type"], "LineString"],
+        ["==", ["get", "class"], "aerialway"]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": POSTER_BACKGROUND_MAP_PALETTE.aerialway,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.4, 14, 0.9, 16, 1.25],
+        "line-dasharray": [0.7, 1.3],
+        "line-opacity": 0.82
+      }
+    }
+  ];
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function getSupplementalPosterTransportInsertionIndex(layers) {
+  const lastNonSymbolIndex = layers.findLastIndex((layer) => getLayerType(layer) !== "symbol");
+
+  return lastNonSymbolIndex === -1 ? layers.length : lastNonSymbolIndex + 1;
 }
 
 /**
@@ -348,7 +440,7 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
   }
 
   const layerObject =
-    /** @type {{ id?: unknown, type?: unknown, "source-layer"?: unknown, paint?: unknown }} */ (
+    /** @type {{ id?: unknown, type?: unknown, "source-layer"?: unknown, paint?: unknown, minzoom?: unknown }} */ (
       layer
     );
   const type = typeof layerObject.type === "string" ? layerObject.type : "";
@@ -389,6 +481,9 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
   } else if (type === "symbol" && isLabelLayer(layerKey, paint)) {
     paint["text-color"] = POSTER_BACKGROUND_MAP_PALETTE.label;
     paint["text-halo-color"] = POSTER_BACKGROUND_MAP_PALETTE.labelHalo;
+    if (Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)) {
+      paint["text-halo-width"] = 1;
+    }
   } else {
     return [{ ...layerObject }];
   }
@@ -396,9 +491,25 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
   return [
     {
       ...layerObject,
+      ...(Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)
+        ? { minzoom: OPENFREEMAP_ROAD_LABEL_MINZOOMS[id] }
+        : {}),
       paint
     }
   ];
+}
+
+/**
+ * @param {unknown} layer
+ */
+function getLayerType(layer) {
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    return "";
+  }
+
+  const layerObject = /** @type {{ type?: unknown }} */ (layer);
+
+  return typeof layerObject.type === "string" ? layerObject.type : "";
 }
 
 /**
