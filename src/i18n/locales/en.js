@@ -7,6 +7,7 @@ const en = {
     exportAria: "Poster export",
     exportLabel: "Export:",
     clipboard: "Clipboard",
+    printPoster: "Print",
     emptyTitle: "Upload a route file to build a route infographic",
     emptyBody: "Map, stats, charts, and export become available after file analysis.",
     languageLabel: "Language"

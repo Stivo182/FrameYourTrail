@@ -14,7 +14,7 @@ import { createState as defaultCreateState } from "../state/app-state.js";
  * @param {(parsed: RouteSource, options: { language: string }) => Promise<TrackLocation | null>} options.reverseGeocodeTrackLocation
  * @param {(sourceRequestToken: number) => boolean} options.isCurrentSourceRequest
  * @param {() => number} options.getCurrentSourceRequestToken
- * @param {() => boolean} options.isExportActive
+ * @param {() => boolean} options.isPosterOutputActive
  * @param {(overrides?: Partial<AppState>) => AppState} [options.createState]
  */
 export function createTrackLocationController({
@@ -24,15 +24,15 @@ export function createTrackLocationController({
   reverseGeocodeTrackLocation,
   isCurrentSourceRequest,
   getCurrentSourceRequestToken,
-  isExportActive,
+  isPosterOutputActive,
   createState = defaultCreateState
 }) {
   let requestToken = 0;
-  let pendingRenderAfterExport = false;
+  let pendingRenderAfterPosterOutput = false;
 
   function invalidate() {
     requestToken += 1;
-    pendingRenderAfterExport = false;
+    pendingRenderAfterPosterOutput = false;
   }
 
   /**
@@ -63,20 +63,20 @@ export function createTrackLocationController({
       })
     );
 
-    if (isExportActive()) {
-      pendingRenderAfterExport = true;
+    if (isPosterOutputActive()) {
+      pendingRenderAfterPosterOutput = true;
       return;
     }
 
     renderApp();
   }
 
-  function renderPendingAfterExport() {
-    if (isExportActive() || !pendingRenderAfterExport) {
+  function renderPendingAfterPosterOutput() {
+    if (isPosterOutputActive() || !pendingRenderAfterPosterOutput) {
       return;
     }
 
-    pendingRenderAfterExport = false;
+    pendingRenderAfterPosterOutput = false;
     const state = getState();
 
     if (!state.parsed || !state.analysis || !state.trackLocation) {
@@ -89,6 +89,6 @@ export function createTrackLocationController({
   return {
     invalidate,
     request,
-    renderPendingAfterExport
+    renderPendingAfterPosterOutput
   };
 }

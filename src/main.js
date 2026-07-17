@@ -85,7 +85,8 @@ let state = createState({
 let sourceAnalysisRequestToken = 0;
 let modeAnalysisRequestToken = 0;
 let appRenderRequestToken = 0;
-let activeExportCount = 0;
+let activePosterOutputCount = 0;
+let printRequestPending = false;
 /** @type {Promise<typeof import("./render/templates.js")> | undefined} */
 let posterRendererModulePromise;
 /** @type {ReturnType<import("./render/map.js").createRouteMapRenderer> | null} */
@@ -118,7 +119,7 @@ const trackLocationController = createTrackLocationController({
   reverseGeocodeTrackLocation,
   isCurrentSourceRequest: isCurrentSourceAnalysisRequest,
   getCurrentSourceRequestToken: () => sourceAnalysisRequestToken,
-  isExportActive: () => activeExportCount > 0
+  isPosterOutputActive: () => activePosterOutputCount > 0
 });
 
 document.addEventListener("mousedown", (event) => {
@@ -440,6 +441,22 @@ function bindControls() {
       }
     });
   });
+
+  app.querySelector("[data-print]")?.addEventListener("click", () => {
+    if (printRequestPending) {
+      return;
+    }
+
+    void handlePrint();
+  });
+}
+
+function closeOpenSelectorMenus() {
+  app.querySelectorAll(SELECTOR_MENU_SELECTOR).forEach((menu) => {
+    if (menu instanceof HTMLDetailsElement) {
+      menu.removeAttribute("open");
+    }
+  });
 }
 
 /**
@@ -685,7 +702,7 @@ function saveMapStyle(mapStyleId, storage) {
  * @param {string} kind
  */
 async function handleExport(kind) {
-  activeExportCount += 1;
+  activePosterOutputCount += 1;
   const previousErrorCount = state.errors.length;
   clearExportErrors();
 
@@ -712,8 +729,42 @@ async function handleExport(kind) {
     });
     renderApp();
   } finally {
-    activeExportCount = Math.max(0, activeExportCount - 1);
-    trackLocationController.renderPendingAfterExport();
+    activePosterOutputCount = Math.max(0, activePosterOutputCount - 1);
+    trackLocationController.renderPendingAfterPosterOutput();
+  }
+}
+
+async function handlePrint() {
+  if (printRequestPending) {
+    return;
+  }
+
+  printRequestPending = true;
+  closeOpenSelectorMenus();
+
+  activePosterOutputCount += 1;
+
+  try {
+    await previewRenderer.getPendingRenderPromises().poster;
+
+    const node = app.querySelector(".infographic");
+
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+
+    const { chart, map } = previewRenderer.getPendingRenderPromises();
+    await Promise.all([chart, map]);
+
+    if (!node.isConnected) {
+      return;
+    }
+
+    window.print();
+  } finally {
+    activePosterOutputCount = Math.max(0, activePosterOutputCount - 1);
+    printRequestPending = false;
+    trackLocationController.renderPendingAfterPosterOutput();
   }
 }
 

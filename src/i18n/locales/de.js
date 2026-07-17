@@ -7,6 +7,7 @@ const de = {
     exportAria: "Poster exportieren",
     exportLabel: "Export:",
     clipboard: "Zwischenablage",
+    printPoster: "Drucken",
     emptyTitle: "Routendatei hochladen, um eine Routeninfografik zu erstellen",
     emptyBody: "Karte, Statistiken, Diagramme und Export sind nach der Dateianalyse verfügbar.",
     languageLabel: "Sprache"

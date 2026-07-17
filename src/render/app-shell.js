@@ -1,5 +1,6 @@
 import { LANGUAGE_OPTIONS } from "../i18n/index.js";
 import { MAP_STYLE_OPTIONS, normalizeMapStyleId } from "./map-styles.js";
+import { PRINT_ICON } from "./toolbar-icons.js";
 
 /**
  * @typedef {object} I18nLike
@@ -171,6 +172,7 @@ export function renderExportControls(i18n, options = {}) {
   const clipboardSupported = options.clipboardSupported ?? true;
   const exportLabel = trimTrailingColon(i18n.t("site.exportLabel"));
   const exportAria = i18n.t("site.exportAria");
+  const printLabel = i18n.t("site.printPoster");
   const clipboardExportHtml = clipboardSupported
     ? `<button class="export-menu__option" type="button" data-export="clipboard">${escapeHtml(i18n.t("site.clipboard"))}</button>`
     : "";
@@ -187,6 +189,7 @@ export function renderExportControls(i18n, options = {}) {
         ${clipboardExportHtml}
       </div>
     </details>
+    <button class="print-button" type="button" data-print title="${escapeHtml(printLabel)}" aria-label="${escapeHtml(printLabel)}">${PRINT_ICON}</button>
   `;
 }
 

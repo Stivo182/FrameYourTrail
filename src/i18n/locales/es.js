@@ -7,6 +7,7 @@ const es = {
     exportAria: "Exportar póster",
     exportLabel: "Exportar:",
     clipboard: "Portapapeles",
+    printPoster: "Imprimir",
     emptyTitle: "Carga un archivo de ruta para crear una infografía",
     emptyBody:
       "Mapa, estadísticas, gráficos y exportación estarán disponibles tras analizar el archivo.",

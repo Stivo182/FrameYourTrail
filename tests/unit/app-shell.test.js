@@ -164,7 +164,8 @@ describe("app shell renderer", () => {
       i18n("en", {
         "site.exportAria": "Export <poster>",
         "site.exportLabel": "Save & share:",
-        "site.clipboard": "Copy <image>"
+        "site.clipboard": "Copy <image>",
+        "site.printPoster": "Print <poster>"
       })
     );
 
@@ -181,11 +182,43 @@ describe("app shell renderer", () => {
     expect(html).toContain("Copy &lt;image&gt;");
   });
 
+  it("renders print as a separate localized action next to the export menu", () => {
+    const html = renderExportControls(
+      i18n("en", {
+        "site.exportAria": "Export poster",
+        "site.exportLabel": "Export",
+        "site.clipboard": "Clipboard",
+        "site.printPoster": "Print <poster>"
+      })
+    );
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const exportMenu = container.querySelector("[data-export-menu]");
+    const printButton = container.querySelector("[data-print]");
+
+    expect(exportMenu).toBeInstanceOf(HTMLDetailsElement);
+    expect(printButton).toBeInstanceOf(HTMLButtonElement);
+    expect(exportMenu?.contains(printButton)).toBe(false);
+    expect(printButton?.previousElementSibling).toBe(exportMenu);
+    expect(printButton?.textContent).toBe("");
+    expect(printButton?.getAttribute("title")).toBe("Print <poster>");
+    expect(printButton?.getAttribute("aria-label")).toBe("Print <poster>");
+    expect(printButton?.querySelector('[data-icon="print"]')).not.toBeNull();
+    expect(printButton?.querySelector("[data-icon-shape]")?.getAttribute("data-icon-shape")).toBe(
+      "lucide-printer"
+    );
+    expect(
+      printButton?.querySelector("[data-icon-library]")?.getAttribute("data-icon-library")
+    ).toBe("lucide");
+  });
+
   it("renders clipboard export only when clipboard images are supported", () => {
     const translations = {
       "site.exportAria": "Export poster",
       "site.exportLabel": "Export",
-      "site.clipboard": "Clipboard"
+      "site.clipboard": "Clipboard",
+      "site.printPoster": "Print"
     };
 
     expect(renderExportControls(i18n("en", translations), { clipboardSupported: true })).toContain(
