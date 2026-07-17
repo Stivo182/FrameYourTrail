@@ -553,6 +553,9 @@ Map requirements:
   remains visible
 - road, trail, path, and track layers stay visually distinct within the poster
   palette
+- the default OpenFreeMap style supplements named park and mountain peak labels
+  when those vector tile source layers expose names; `landcover` and `landuse`
+  are not labeled because they do not expose names
 - selected OpenFreeMap fill patterns, including wetland and pedestrian-area
   patterns, are preserved as detail overlays above poster-colored base fills
   when they improve map detail

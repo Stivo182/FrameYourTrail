@@ -405,6 +405,60 @@ describe("map helpers", () => {
     }
   });
 
+  it("adds supplemental named park and mountain peak labels to the poster OpenFreeMap style", async () => {
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(async () => ({
+        ok: true,
+        json: vi.fn(async () => cloneOpenFreeMapStyle())
+      }))
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const openFreeMapNameTextField = [
+      "case",
+      ["has", "name:nonlatin"],
+      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
+      ["coalesce", ["get", "name_en"], ["get", "name"]]
+    ];
+    const posterLabelPaint = {
+      "text-color": "#5f6c61",
+      "text-halo-color": "#fbfaf3",
+      "text-halo-width": 1
+    };
+
+    const parkLabel = layer("poster-park-label");
+    const mountainPeakLabel = layer("poster-mountain-peak-label");
+
+    expect(parkLabel).toMatchObject({
+      id: "poster-park-label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "park",
+      filter: ["has", "name"],
+      layout: expect.objectContaining({
+        "text-field": openFreeMapNameTextField,
+        "text-size": 11
+      }),
+      paint: posterLabelPaint
+    });
+    expect(mountainPeakLabel).toMatchObject({
+      id: "poster-mountain-peak-label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "mountain_peak",
+      filter: ["has", "name"],
+      layout: expect.objectContaining({
+        "text-field": openFreeMapNameTextField,
+        "text-size": 10
+      }),
+      paint: posterLabelPaint
+    });
+    expect(layerIndex("poster-park-label")).toBeGreaterThan(layerIndex("place-label"));
+    expect(layerIndex("poster-mountain-peak-label")).toBeGreaterThan(layerIndex("place-label"));
+    expect(layer("poster-landcover-label")).toBeUndefined();
+    expect(layer("poster-landuse-label")).toBeUndefined();
+  });
+
   it("builds a muted poster red-orange-green MapLibre gradient from speed samples", () => {
     const gradient = createRouteSpeedGradient(speedSeries);
 

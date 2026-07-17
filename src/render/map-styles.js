@@ -21,6 +21,32 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
 
 const POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS = new Set(["landcover_wetland", "road_area_pattern"]);
 
+const OPENFREEMAP_NAME_TEXT_FIELD = Object.freeze([
+  "case",
+  ["has", "name:nonlatin"],
+  ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
+  ["coalesce", ["get", "name_en"], ["get", "name"]]
+]);
+
+const SUPPLEMENTAL_POSTER_LABEL_PAINT = Object.freeze({
+  "text-color": POSTER_BACKGROUND_MAP_PALETTE.label,
+  "text-halo-color": POSTER_BACKGROUND_MAP_PALETTE.labelHalo,
+  "text-halo-width": 1
+});
+
+const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
+  Object.freeze({
+    id: "poster-park-label",
+    sourceLayer: "park",
+    textSize: 11
+  }),
+  Object.freeze({
+    id: "poster-mountain-peak-label",
+    sourceLayer: "mountain_peak",
+    textSize: 10
+  })
+]);
+
 export const MAP_STYLE_OPTIONS = Object.freeze([
   Object.freeze({
     id: DEFAULT_MAP_STYLE_ID,
@@ -289,8 +315,28 @@ function applyPosterBackgroundMapPalette(style) {
 
   return {
     ...styleObject,
-    layers: styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers)
+    layers: [
+      ...styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers),
+      ...createSupplementalPosterLabelLayers()
+    ]
   };
+}
+
+function createSupplementalPosterLabelLayers() {
+  return SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS.map(({ id, sourceLayer, textSize }) => ({
+    id,
+    type: "symbol",
+    source: "openmaptiles",
+    "source-layer": sourceLayer,
+    filter: ["has", "name"],
+    layout: {
+      "text-field": OPENFREEMAP_NAME_TEXT_FIELD,
+      "text-font": ["Noto Sans Regular"],
+      "text-size": textSize,
+      "text-max-width": 8
+    },
+    paint: SUPPLEMENTAL_POSTER_LABEL_PAINT
+  }));
 }
 
 /**
