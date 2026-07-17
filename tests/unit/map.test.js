@@ -327,6 +327,12 @@ function cloneOpenFreeMapStyle() {
   return JSON.parse(JSON.stringify(openFreeMapStyle));
 }
 
+function createOpenFreeMapStyleResponse() {
+  return new Response(JSON.stringify(cloneOpenFreeMapStyle()), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
 describe("map helpers", () => {
   beforeEach(() => {
     maplibreMock.instances.length = 0;
@@ -336,10 +342,7 @@ describe("map helpers", () => {
     maplibreMock.Map.mockClear();
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        json: vi.fn(async () => cloneOpenFreeMapStyle())
-      }))
+      vi.fn(async () => createOpenFreeMapStyleResponse())
     );
   });
 
@@ -407,10 +410,7 @@ describe("map helpers", () => {
 
   it("adds supplemental named park and mountain peak labels to the poster OpenFreeMap style", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
-      fetcher: vi.fn(async () => ({
-        ok: true,
-        json: vi.fn(async () => cloneOpenFreeMapStyle())
-      }))
+      fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
