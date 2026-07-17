@@ -77,6 +77,20 @@ describe("GitHub Pages configuration", () => {
     expect(verifyJob).toContain("run: npm run verify");
   });
 
+  it("does not persist checkout credentials in CI jobs", () => {
+    const pagesWorkflow = readFileSync(pagesWorkflowPath, "utf8");
+    const verifyWorkflow = readFileSync(verifyWorkflowPath, "utf8");
+    const checkoutSteps = [
+      ...pagesWorkflow.matchAll(checkoutStepPattern),
+      ...verifyWorkflow.matchAll(checkoutStepPattern)
+    ];
+
+    expect(checkoutSteps).toHaveLength(2);
+    for (const step of checkoutSteps) {
+      expect(step.groups?.body).toContain("persist-credentials: false");
+    }
+  });
+
   it("runs the full verification gate on the OS that owns the committed visual snapshot", () => {
     const hasWorkflow = existsSync(pagesWorkflowPath);
     const workflow = hasWorkflow ? readFileSync(pagesWorkflowPath, "utf8") : "";
@@ -165,6 +179,8 @@ describe("GitHub Pages configuration", () => {
     expect(captured.VITE_BASE_PATH).toBe("/explicit-base/");
   });
 });
+
+const checkoutStepPattern = /- name: Checkout\n(?<body>(?: {8,}.+\n)+)/g;
 
 /**
  * @param {Record<string, string | undefined>} [env]
