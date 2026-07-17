@@ -9,6 +9,7 @@ import { getSiteBasePath } from "../../scripts/seo-config.mjs";
 import { resolveViteBasePath } from "../../vite.config.js";
 
 const pagesWorkflowPath = resolve(".github/workflows/pages.yml");
+const verifyWorkflowPath = resolve(".github/workflows/verify.yml");
 const pagesSmokeRunnerPath = resolve("scripts/run-pages-smoke.mjs");
 const siteConfigPath = resolve("site.config.json");
 const githubPagesBasePath = getSiteBasePath();
@@ -58,6 +59,23 @@ describe("GitHub Pages configuration", () => {
     expect(workflow).toContain("actions/deploy-pages");
   });
 
+  it("runs pull request checks through the reusable full verification gate", () => {
+    const hasVerifyWorkflow = existsSync(verifyWorkflowPath);
+    const workflow = hasVerifyWorkflow ? readFileSync(verifyWorkflowPath, "utf8") : "";
+    const verifyJob = workflow.match(/verify:\n(?<body>(?:[ ]{4}.+\n)+)/)?.groups?.body ?? "";
+
+    expect(hasVerifyWorkflow).toBe(true);
+    expect(workflow).toContain("pull_request:");
+    expect(workflow).toContain('branches: ["main"]');
+    expect(workflow).toContain("types: [opened, synchronize, reopened, ready_for_review]");
+    expect(workflow).toContain("workflow_call:");
+    expect(workflow).toContain("contents: read");
+    expect(verifyJob).toContain("runs-on: windows-latest");
+    expect(verifyJob).toContain("run: npx playwright install chromium");
+    expect(verifyJob).not.toContain("npx playwright install --with-deps chromium");
+    expect(verifyJob).toContain("run: npm run verify");
+  });
+
   it("runs the full verification gate on the OS that owns the committed visual snapshot", () => {
     const hasWorkflow = existsSync(pagesWorkflowPath);
     const workflow = hasWorkflow ? readFileSync(pagesWorkflowPath, "utf8") : "";
@@ -67,10 +85,7 @@ describe("GitHub Pages configuration", () => {
     const deployJob = workflow.match(/\n[ ]{2}deploy:\n(?<body>[\s\S]*)/)?.groups?.body ?? "";
 
     expect(hasWorkflow).toBe(true);
-    expect(verifyJob).toContain("runs-on: windows-latest");
-    expect(verifyJob).toContain("run: npx playwright install chromium");
-    expect(verifyJob).not.toContain("npx playwright install --with-deps chromium");
-    expect(verifyJob).toContain("run: npm run verify");
+    expect(verifyJob).toContain("uses: ./.github/workflows/verify.yml");
     expect(buildJob).toContain("runs-on: ubuntu-latest");
     expect(deployJob).toContain("runs-on: ubuntu-latest");
     expect(workflow).toMatch(/build:\n(?:[ ]{4}.+\n)*[ ]{4}needs: verify/);
