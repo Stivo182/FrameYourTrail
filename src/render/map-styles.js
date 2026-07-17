@@ -62,7 +62,11 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
     id: "poster-shipway-label",
     sourceLayer: "transportation_name",
     textSize: 10,
-    filter: ["all", ["has", "name"], ["==", ["get", "class"], "shipway"]],
+    filter: [
+      "all",
+      ["has", "name"],
+      ["match", ["get", "class"], ["shipway", "ferry"], true, false]
+    ],
     layout: {
       "symbol-placement": "line"
     }
@@ -365,7 +369,7 @@ function applyPosterBackgroundMapPalette(style) {
 
   return {
     ...styleObject,
-    layers: insertSupplementalPosterTransportLayers(posterLayers)
+    layers: insertSupplementalPosterDetailLayers(posterLayers)
   };
 }
 
@@ -396,7 +400,7 @@ function createSupplementalPosterLabelLayers() {
 /**
  * @param {unknown[]} layers
  */
-function insertSupplementalPosterTransportLayers(layers) {
+function insertSupplementalPosterDetailLayers(layers) {
   const insertionIndex = getSupplementalPosterTransportInsertionIndex(layers);
 
   return [
@@ -459,7 +463,7 @@ function createSupplementalPosterTransportLineLayers() {
       filter: [
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["==", ["get", "class"], "shipway"]
+        ["match", ["get", "class"], ["shipway", "ferry"], true, false]
       ],
       layout: {
         "line-cap": "round",
@@ -470,6 +474,19 @@ function createSupplementalPosterTransportLineLayers() {
         "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.35, 12, 0.7, 15, 1],
         "line-dasharray": [1, 1.8],
         "line-opacity": 0.7
+      }
+    },
+    {
+      id: "poster-building-outline",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "building",
+      minzoom: 14,
+      filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+      paint: {
+        "line-color": POSTER_BACKGROUND_MAP_PALETTE.buildingOutline,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.35, 16, 0.5, 20, 0.8],
+        "line-opacity": 0.8
       }
     }
   ];

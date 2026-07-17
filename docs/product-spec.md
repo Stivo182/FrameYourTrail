@@ -555,12 +555,12 @@ Map requirements:
   distinct within the poster palette
 - the default OpenFreeMap style supplements named park and mountain peak labels
   when those vector tile source layers expose names, and supplements cable
-  lift/aerialway and sea route names when the transportation name source layer
-  exposes names; it also adds best-effort lighthouse labels from named
+  lift/aerialway and sea/ferry route names when the transportation name source
+  layer exposes names; it also adds best-effort lighthouse labels from named
   attraction or museum POIs containing `light`, because OpenFreeMap tiles do not
   expose a reliable lighthouse class; `landcover` and `landuse` are not labeled
   because they do not expose names
-- river, water body, sea route, and building detail stays readable where
+- river, water body, sea/ferry route, and building detail stays readable where
   OpenFreeMap exposes the underlying vector data
 - selected OpenFreeMap fill patterns, including wetland and pedestrian-area
   patterns, are preserved as detail overlays above poster-colored base fills

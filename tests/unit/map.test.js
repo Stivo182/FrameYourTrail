@@ -291,6 +291,7 @@ const openFreeMapStyle = {
       type: "fill",
       source: "openmaptiles",
       "source-layer": "building",
+      maxzoom: 14,
       paint: {
         "fill-color": "#cbd5e1"
       }
@@ -300,6 +301,7 @@ const openFreeMapStyle = {
       type: "fill-extrusion",
       source: "openmaptiles",
       "source-layer": "building",
+      minzoom: 14,
       paint: {
         "fill-extrusion-color": "#cbd5e1"
       }
@@ -706,7 +708,7 @@ describe("map helpers", () => {
       filter: [
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["==", ["get", "class"], "shipway"]
+        ["match", ["get", "class"], ["shipway", "ferry"], true, false]
       ],
       layout: {
         "line-cap": "round",
@@ -727,7 +729,11 @@ describe("map helpers", () => {
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "transportation_name",
-      filter: ["all", ["has", "name"], ["==", ["get", "class"], "shipway"]],
+      filter: [
+        "all",
+        ["has", "name"],
+        ["match", ["get", "class"], ["shipway", "ferry"], true, false]
+      ],
       layout: expect.objectContaining({
         "symbol-placement": "line",
         "text-field": openFreeMapNameTextField,
@@ -1160,6 +1166,21 @@ describe("map helpers", () => {
       "fill-outline-color": "#c9c1b2"
     });
     expect(layerPaint("building-3d")?.["fill-extrusion-color"]).toBe("#e3ded2");
+    expect(layer("poster-building-outline")).toMatchObject({
+      id: "poster-building-outline",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "building",
+      minzoom: 14,
+      filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+      paint: {
+        "line-color": "#c9c1b2",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.35, 16, 0.5, 20, 0.8],
+        "line-opacity": 0.8
+      }
+    });
+    expect(layerIndex("poster-building-outline")).toBeGreaterThan(layerIndex("building-3d"));
+    expect(layerIndex("poster-building-outline")).toBeLessThan(layerIndex("place-label"));
     expect(layerPaint("road-minor")?.["line-color"]).toBe("#ddd5c5");
     expect(layerPaint("mountain-path")?.["line-color"]).toBe("#8f8b63");
     expect(layerPaint("park_outline")).toEqual({
