@@ -532,7 +532,7 @@ describe("map helpers", () => {
       "source-layer": "transportation",
       filter: [
         "all",
-        ["==", ["geometry-type"], "LineString"],
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
         ["match", ["get", "class"], ["path", "track"], true, false]
       ],
       layout: {
@@ -553,7 +553,7 @@ describe("map helpers", () => {
       "source-layer": "transportation",
       filter: [
         "all",
-        ["==", ["geometry-type"], "LineString"],
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
         ["==", ["get", "class"], "aerialway"]
       ],
       layout: {
