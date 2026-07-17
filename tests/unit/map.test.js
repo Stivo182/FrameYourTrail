@@ -212,6 +212,16 @@ const openFreeMapStyle = {
       }
     },
     {
+      id: "landcover_scrub_pattern",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "landcover",
+      paint: {
+        "fill-pattern": "scrub_pattern",
+        "fill-outline-color": "#123456"
+      }
+    },
+    {
       id: "building",
       type: "fill",
       source: "openmaptiles",
@@ -733,20 +743,36 @@ describe("map helpers", () => {
     await initRouteMap(host, points, createI18n("en"));
 
     const mapStyle = maplibreMock.Map.mock.calls[0][0].style;
+    const layer = (id) => mapStyle.layers.find((styleLayer) => styleLayer.id === id);
     const layerPaint = (id) => mapStyle.layers.find((layer) => layer.id === id)?.paint;
+    const layerIndex = (id) => mapStyle.layers.findIndex((styleLayer) => styleLayer.id === id);
 
     expect(layerPaint("background")?.["background-color"]).toBe("#f0eee3");
     expect(layerPaint("park")).toEqual({
       "fill-color": "#d7dfd0"
     });
     expect(layerPaint("water")?.["fill-color"]).toBe("#d6e3e0");
+    expect(layerPaint("landcover_wetland-poster-fill")).toEqual({
+      "fill-color": "#d7dfd0"
+    });
     expect(layerPaint("landcover_wetland")).toEqual({
-      "fill-color": "#d7dfd0",
       "fill-pattern": "wetland_bg_11"
     });
+    expect(layerPaint("road_area_pattern-poster-fill")).toEqual({
+      "fill-color": "#f0eee3"
+    });
     expect(layerPaint("road_area_pattern")).toEqual({
-      "fill-color": "#f0eee3",
       "fill-pattern": "pedestrian_polygon"
+    });
+    expect(layerIndex("landcover_wetland-poster-fill")).toBeLessThan(
+      layerIndex("landcover_wetland")
+    );
+    expect(layerIndex("road_area_pattern-poster-fill")).toBeLessThan(
+      layerIndex("road_area_pattern")
+    );
+    expect(layer("landcover_scrub_pattern-poster-fill")).toBeUndefined();
+    expect(layerPaint("landcover_scrub_pattern")).toEqual({
+      "fill-color": "#d7dfd0"
     });
     expect(layerPaint("building")?.["fill-color"]).toBe("#e3ded2");
     expect(layerPaint("road-minor")?.["line-color"]).toBe("#ddd5c5");

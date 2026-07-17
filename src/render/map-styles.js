@@ -19,10 +19,7 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   labelHalo: "#fbfaf3"
 });
 
-const POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS = new Set([
-  "landcover_wetland",
-  "road_area_pattern"
-]);
+const POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS = new Set(["landcover_wetland", "road_area_pattern"]);
 
 export const MAP_STYLE_OPTIONS = Object.freeze([
   Object.freeze({
@@ -292,16 +289,16 @@ function applyPosterBackgroundMapPalette(style) {
 
   return {
     ...styleObject,
-    layers: styleObject.layers.map(applyPosterBackgroundMapPaletteToLayer)
+    layers: styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers)
   };
 }
 
 /**
  * @param {unknown} layer
  */
-function applyPosterBackgroundMapPaletteToLayer(layer) {
+function applyPosterBackgroundMapPaletteToLayers(layer) {
   if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
-    return layer;
+    return [layer];
   }
 
   const layerObject =
@@ -318,18 +315,17 @@ function applyPosterBackgroundMapPaletteToLayer(layer) {
       ? layerObject.paint
       : {};
   const paint = /** @type {Record<string, unknown>} */ ({ ...basePaint });
+  const posterFillPattern = type === "fill" ? getPosterFillPattern(id, paint) : null;
 
   if (type === "background") {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
-    const preservedFillPattern = getPosterFillPattern(id, paint);
-
     paint["fill-color"] = getPosterFillColor(layerKey);
     delete paint["fill-outline-color"];
     delete paint["fill-pattern"];
 
-    if (preservedFillPattern) {
-      paint["fill-pattern"] = preservedFillPattern;
+    if (posterFillPattern) {
+      return createPosterFillPatternLayers(layerObject, id, paint, posterFillPattern);
     }
   } else if (type === "fill-extrusion") {
     paint["fill-extrusion-color"] = POSTER_BACKGROUND_MAP_PALETTE.building;
@@ -337,7 +333,7 @@ function applyPosterBackgroundMapPaletteToLayer(layer) {
     const lineColor = getPosterLineColor(layerKey);
 
     if (!lineColor) {
-      return { ...layerObject };
+      return [{ ...layerObject }];
     }
 
     paint["line-color"] = lineColor;
@@ -348,13 +344,44 @@ function applyPosterBackgroundMapPaletteToLayer(layer) {
     paint["text-color"] = POSTER_BACKGROUND_MAP_PALETTE.label;
     paint["text-halo-color"] = POSTER_BACKGROUND_MAP_PALETTE.labelHalo;
   } else {
-    return { ...layerObject };
+    return [{ ...layerObject }];
   }
 
-  return {
-    ...layerObject,
-    paint
-  };
+  return [
+    {
+      ...layerObject,
+      paint
+    }
+  ];
+}
+
+/**
+ * @param {{ paint?: unknown }} layer
+ * @param {string} layerId
+ * @param {Record<string, unknown>} posterFillPaint
+ * @param {string} fillPattern
+ */
+function createPosterFillPatternLayers(layer, layerId, posterFillPaint, fillPattern) {
+  const paint =
+    layer.paint && typeof layer.paint === "object" && !Array.isArray(layer.paint)
+      ? /** @type {Record<string, unknown>} */ ({ ...layer.paint })
+      : {};
+
+  paint["fill-pattern"] = fillPattern;
+  delete paint["fill-color"];
+  delete paint["fill-outline-color"];
+
+  return [
+    {
+      ...layer,
+      id: `${layerId}-poster-fill`,
+      paint: posterFillPaint
+    },
+    {
+      ...layer,
+      paint
+    }
+  ];
 }
 
 /**
