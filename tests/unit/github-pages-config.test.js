@@ -65,6 +65,7 @@ describe("GitHub Pages configuration", () => {
     const verifyJob = workflow.match(/verify:\n(?<body>(?:[ ]{4}.+\n)+)/)?.groups?.body ?? "";
 
     expect(hasVerifyWorkflow).toBe(true);
+    expect(workflow).toMatch(/\n[ ]{2}push:\n[ ]{4}branches: \["main"\]/);
     expect(workflow).toContain("pull_request:");
     expect(workflow).toContain('branches: ["main"]');
     expect(workflow).toContain("types: [opened, synchronize, reopened, ready_for_review]");
