@@ -194,6 +194,71 @@ const openFreeMapStyle = {
       }
     },
     {
+      id: "waterway_river",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "waterway",
+      paint: {
+        "line-color": "#93c5fd"
+      }
+    },
+    {
+      id: "waterway_other",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "waterway",
+      paint: {
+        "line-color": "#bfdbfe"
+      }
+    },
+    {
+      id: "waterway_line_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "waterway",
+      minzoom: 13,
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 10
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 0.5
+      }
+    },
+    {
+      id: "water_name_point_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "water_name",
+      layout: {
+        "symbol-placement": "point",
+        "text-field": ["get", "name"],
+        "text-size": 11
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
+      id: "water_name_line_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "water_name",
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 11
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
       id: "landcover_wetland",
       type: "fill",
       source: "openmaptiles",
@@ -228,6 +293,15 @@ const openFreeMapStyle = {
       "source-layer": "building",
       paint: {
         "fill-color": "#cbd5e1"
+      }
+    },
+    {
+      id: "building-3d",
+      type: "fill-extrusion",
+      source: "openmaptiles",
+      "source-layer": "building",
+      paint: {
+        "fill-extrusion-color": "#cbd5e1"
       }
     },
     {
@@ -606,6 +680,92 @@ describe("map helpers", () => {
     expect(layer("poster-landuse-label")).toBeUndefined();
   });
 
+  it("adds poster OpenFreeMap maritime route detail and best-effort lighthouse labels", async () => {
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const openFreeMapNameTextField = [
+      "case",
+      ["has", "name:nonlatin"],
+      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
+      ["coalesce", ["get", "name_en"], ["get", "name"]]
+    ];
+    const posterLabelPaint = {
+      "text-color": "#5f6c61",
+      "text-halo-color": "#fbfaf3",
+      "text-halo-width": 1
+    };
+
+    expect(layer("poster-shipway-line")).toMatchObject({
+      id: "poster-shipway-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+        ["==", ["get", "class"], "shipway"]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#7ba8a8",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.35, 12, 0.7, 15, 1],
+        "line-dasharray": [1, 1.8],
+        "line-opacity": 0.7
+      }
+    });
+    expect(layerIndex("poster-shipway-line")).toBeGreaterThan(layerIndex("poster-aerialway-line"));
+    expect(layerIndex("poster-shipway-line")).toBeLessThan(layerIndex("place-label"));
+
+    expect(layer("poster-shipway-label")).toMatchObject({
+      id: "poster-shipway-label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      filter: ["all", ["has", "name"], ["==", ["get", "class"], "shipway"]],
+      layout: expect.objectContaining({
+        "symbol-placement": "line",
+        "text-field": openFreeMapNameTextField,
+        "text-size": 10
+      }),
+      paint: posterLabelPaint
+    });
+
+    expect(layer("poster-lighthouse-label")).toMatchObject({
+      id: "poster-lighthouse-label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "poi",
+      filter: [
+        "all",
+        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
+        ["has", "name"],
+        ["match", ["get", "class"], ["attraction", "museum"], true, false],
+        [
+          "any",
+          ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name"], ""]]], -1],
+          ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name_en"], ""]]], -1],
+          ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name:latin"], ""]]], -1]
+        ]
+      ],
+      layout: expect.objectContaining({
+        "symbol-placement": "point",
+        "text-field": openFreeMapNameTextField,
+        "text-size": 9
+      }),
+      paint: posterLabelPaint
+    });
+    expect(layerIndex("poster-shipway-label")).toBeGreaterThan(layerIndex("highway-name-path"));
+    expect(layerIndex("poster-lighthouse-label")).toBeGreaterThan(
+      layerIndex("poster-shipway-label")
+    );
+  });
+
   it("builds a muted poster red-orange-green MapLibre gradient from speed samples", () => {
     const gradient = createRouteSpeedGradient(speedSeries);
 
@@ -953,6 +1113,26 @@ describe("map helpers", () => {
       "fill-color": "#d7dfd0"
     });
     expect(layerPaint("water")?.["fill-color"]).toBe("#d6e3e0");
+    expect(layerPaint("waterway_river")?.["line-color"]).toBe("#7ba8a8");
+    expect(layerPaint("waterway_other")?.["line-color"]).toBe("#7ba8a8");
+    expect(layer("waterway_line_label")).toMatchObject({
+      minzoom: 12,
+      paint: {
+        "text-color": "#416b73",
+        "text-halo-color": "#fbfaf3",
+        "text-halo-width": 1
+      }
+    });
+    expect(layerPaint("water_name_point_label")).toMatchObject({
+      "text-color": "#416b73",
+      "text-halo-color": "#fbfaf3",
+      "text-halo-width": 1
+    });
+    expect(layerPaint("water_name_line_label")).toMatchObject({
+      "text-color": "#416b73",
+      "text-halo-color": "#fbfaf3",
+      "text-halo-width": 1
+    });
     expect(layerPaint("landcover_wetland-poster-fill")).toEqual({
       "fill-color": "#d7dfd0"
     });
@@ -975,7 +1155,11 @@ describe("map helpers", () => {
     expect(layerPaint("landcover_scrub_pattern")).toEqual({
       "fill-color": "#d7dfd0"
     });
-    expect(layerPaint("building")?.["fill-color"]).toBe("#e3ded2");
+    expect(layerPaint("building")).toMatchObject({
+      "fill-color": "#e3ded2",
+      "fill-outline-color": "#c9c1b2"
+    });
+    expect(layerPaint("building-3d")?.["fill-extrusion-color"]).toBe("#e3ded2");
     expect(layerPaint("road-minor")?.["line-color"]).toBe("#ddd5c5");
     expect(layerPaint("mountain-path")?.["line-color"]).toBe("#8f8b63");
     expect(layerPaint("park_outline")).toEqual({

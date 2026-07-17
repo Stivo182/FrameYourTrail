@@ -11,7 +11,10 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   land: "#f0eee3",
   park: "#d7dfd0",
   water: "#d6e3e0",
+  waterLine: "#7ba8a8",
+  waterLabel: "#416b73",
   building: "#e3ded2",
+  buildingOutline: "#c9c1b2",
   road: "#ddd5c5",
   trail: "#8f8b63",
   aerialway: "#9f9a8d",
@@ -53,6 +56,35 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
     filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]],
     layout: {
       "symbol-placement": "line"
+    }
+  }),
+  Object.freeze({
+    id: "poster-shipway-label",
+    sourceLayer: "transportation_name",
+    textSize: 10,
+    filter: ["all", ["has", "name"], ["==", ["get", "class"], "shipway"]],
+    layout: {
+      "symbol-placement": "line"
+    }
+  }),
+  Object.freeze({
+    id: "poster-lighthouse-label",
+    sourceLayer: "poi",
+    textSize: 9,
+    filter: [
+      "all",
+      ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
+      ["has", "name"],
+      ["match", ["get", "class"], ["attraction", "museum"], true, false],
+      [
+        "any",
+        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name"], ""]]], -1],
+        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name_en"], ""]]], -1],
+        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name:latin"], ""]]], -1]
+      ]
+    ],
+    layout: {
+      "symbol-placement": "point"
     }
   })
 ]);
@@ -418,6 +450,27 @@ function createSupplementalPosterTransportLineLayers() {
         "line-dasharray": [0.7, 1.3],
         "line-opacity": 0.82
       }
+    },
+    {
+      id: "poster-shipway-line",
+      type: "line",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+        ["==", ["get", "class"], "shipway"]
+      ],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": POSTER_BACKGROUND_MAP_PALETTE.waterLine,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.35, 12, 0.7, 15, 1],
+        "line-dasharray": [1, 1.8],
+        "line-opacity": 0.7
+      }
     }
   ];
 }
@@ -459,7 +512,11 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
     paint["fill-color"] = getPosterFillColor(layerKey);
-    delete paint["fill-outline-color"];
+    if (hasMapLayerToken(layerKey, ["building"])) {
+      paint["fill-outline-color"] = POSTER_BACKGROUND_MAP_PALETTE.buildingOutline;
+    } else {
+      delete paint["fill-outline-color"];
+    }
     delete paint["fill-pattern"];
 
     if (posterFillPattern) {
@@ -479,9 +536,9 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
       delete paint["line-dasharray"];
     }
   } else if (type === "symbol" && isLabelLayer(layerKey, paint)) {
-    paint["text-color"] = POSTER_BACKGROUND_MAP_PALETTE.label;
+    paint["text-color"] = getPosterLabelColor(layerKey);
     paint["text-halo-color"] = POSTER_BACKGROUND_MAP_PALETTE.labelHalo;
-    if (Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)) {
+    if (Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id) || isWaterLabelLayer(layerKey)) {
       paint["text-halo-width"] = 1;
     }
   } else {
@@ -493,7 +550,9 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
       ...layerObject,
       ...(Object.hasOwn(OPENFREEMAP_ROAD_LABEL_MINZOOMS, id)
         ? { minzoom: OPENFREEMAP_ROAD_LABEL_MINZOOMS[id] }
-        : {}),
+        : id === "waterway_line_label"
+          ? { minzoom: 12 }
+          : {}),
       paint
     }
   ];
@@ -577,7 +636,7 @@ function getPosterFillColor(layerKey) {
  */
 function getPosterLineColor(layerKey) {
   if (hasMapLayerToken(layerKey, ["water", "waterway"])) {
-    return POSTER_BACKGROUND_MAP_PALETTE.water;
+    return POSTER_BACKGROUND_MAP_PALETTE.waterLine;
   }
 
   if (isParkOutlineLayer(layerKey)) {
@@ -618,6 +677,22 @@ function getPosterLineColor(layerKey) {
   }
 
   return null;
+}
+
+/**
+ * @param {string} layerKey
+ */
+function getPosterLabelColor(layerKey) {
+  return isWaterLabelLayer(layerKey)
+    ? POSTER_BACKGROUND_MAP_PALETTE.waterLabel
+    : POSTER_BACKGROUND_MAP_PALETTE.label;
+}
+
+/**
+ * @param {string} layerKey
+ */
+function isWaterLabelLayer(layerKey) {
+  return hasMapLayerToken(layerKey, ["waterway", "water_name"]);
 }
 
 /**
