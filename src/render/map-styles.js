@@ -904,13 +904,14 @@ function getNativePosterAreaClassCoverage(layers, source, definition) {
     }
 
     const layerObject = /** @type {{ filter?: unknown }} */ (layer);
-    const classValues = getPositiveFilterPropertyValues(layerObject.filter, "class");
+    const classAnalysis = analyzePositiveFilterProperty(layerObject.filter, "class");
 
     if (
-      classValues &&
-      getPositiveFilterAreaDefinition(definition.sourceLayer, "class", classValues) === definition
+      classAnalysis?.isExhaustive &&
+      getPositiveFilterAreaDefinition(definition.sourceLayer, "class", classAnalysis.values) ===
+        definition
     ) {
-      for (const classValue of classValues) {
+      for (const classValue of classAnalysis.values) {
         coveredClassValues.add(classValue);
       }
     }
@@ -925,7 +926,26 @@ function getNativePosterAreaClassCoverage(layers, source, definition) {
  * @param {string} sourceLayer
  */
 function hasNativePosterAreaFillCoverage(layers, source, sourceLayer) {
-  return layers.some((layer) => isResolvedSourceFillLayer(layer, source, sourceLayer));
+  return layers.some((layer) => {
+    if (!isResolvedSourceFillLayer(layer, source, sourceLayer)) {
+      return false;
+    }
+
+    const layerObject = /** @type {{ filter?: unknown, layout?: unknown }} */ (layer);
+    const layout =
+      layerObject.layout &&
+      typeof layerObject.layout === "object" &&
+      !Array.isArray(layerObject.layout)
+        ? /** @type {{ visibility?: unknown }} */ (layerObject.layout)
+        : {};
+    const classAnalysis = analyzePositiveFilterProperty(layerObject.filter, "class");
+
+    return (
+      layout.visibility !== "none" &&
+      classAnalysis?.isExhaustive === true &&
+      !classAnalysis.hasPositiveSelector
+    );
+  });
 }
 
 /**
@@ -956,12 +976,14 @@ function getSupplementalPosterAreaInsertionIndex(layers, sourceLayer, resolveSou
   const barrierIndex = getSupplementalPosterAreaBarrierIndex(layers);
 
   if (sourceLayer === "landuse") {
-    const landcoverSource = resolveSource("landcover");
-    const firstLandcoverIndex = layers.findIndex(
-      (layer) =>
-        landcoverSource !== undefined &&
-        isResolvedSourceFillLayer(layer, landcoverSource, "landcover")
-    );
+    const firstLandcoverIndex = layers.findIndex((layer) => {
+      if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+        return false;
+      }
+
+      const layerObject = /** @type {{ "source-layer"?: unknown }} */ (layer);
+      return getLayerType(layer) === "fill" && layerObject["source-layer"] === "landcover";
+    });
 
     return firstLandcoverIndex === -1 ? barrierIndex : Math.min(firstLandcoverIndex, barrierIndex);
   }
@@ -1471,9 +1493,10 @@ function getPosterAreaDefinition(sourceLayer, filter) {
   }
 
   for (const propertyName of /** @type {const} */ (["class", "subclass"])) {
-    const propertyValues = getPositiveFilterPropertyValues(filter, propertyName);
+    const propertyAnalysis = analyzePositiveFilterProperty(filter, propertyName);
     const definition =
-      propertyValues && getPositiveFilterAreaDefinition(sourceLayer, propertyName, propertyValues);
+      propertyAnalysis &&
+      getPositiveFilterAreaDefinition(sourceLayer, propertyName, propertyAnalysis.values);
 
     if (definition) {
       return definition;
@@ -1569,11 +1592,15 @@ function createPositivePropertyFilter(propertyName, values) {
 /**
  * @param {unknown} expression
  * @param {"class" | "subclass"} propertyName
- * @returns {string[] | null}
+ * @returns {{ values: string[], isExhaustive: boolean, hasPositiveSelector: boolean } | null}
  */
-function getPositiveFilterPropertyValues(expression, propertyName) {
+function analyzePositiveFilterProperty(expression, propertyName) {
+  if (expression === undefined || expression === null || expression === true) {
+    return { values: [], isExhaustive: true, hasPositiveSelector: false };
+  }
+
   if (!Array.isArray(expression) || expression.length === 0) {
-    return [];
+    return { values: [], isExhaustive: false, hasPositiveSelector: false };
   }
 
   const operator = expression[0];
@@ -1581,35 +1608,69 @@ function getPositiveFilterPropertyValues(expression, propertyName) {
   if (operator === "all") {
     /** @type {Set<string> | null} */
     let propertyValues = null;
+    let isExhaustive = true;
+    let hasPositiveSelector = false;
 
     for (const operand of expression.slice(1)) {
-      const operandValues = getPositiveFilterPropertyValues(operand, propertyName);
+      const operandAnalysis = analyzePositiveFilterProperty(operand, propertyName);
 
-      if (operandValues === null) {
+      if (operandAnalysis === null) {
         return null;
       }
 
-      if (operandValues.length === 0) {
+      isExhaustive = isExhaustive && operandAnalysis.isExhaustive;
+      hasPositiveSelector = hasPositiveSelector || operandAnalysis.hasPositiveSelector;
+
+      if (!operandAnalysis.hasPositiveSelector) {
         continue;
       }
 
       if (propertyValues === null) {
-        propertyValues = new Set(operandValues);
+        propertyValues = new Set(operandAnalysis.values);
         continue;
       }
 
       for (const propertyValue of propertyValues) {
-        if (!operandValues.includes(propertyValue)) {
+        if (!operandAnalysis.values.includes(propertyValue)) {
           propertyValues.delete(propertyValue);
         }
       }
     }
 
-    return propertyValues === null ? [] : [...propertyValues];
+    return {
+      values: propertyValues === null ? [] : [...propertyValues],
+      isExhaustive,
+      hasPositiveSelector
+    };
   }
 
   if (operator === "any") {
-    return null;
+    const propertyValues = new Set();
+
+    for (const operand of expression.slice(1)) {
+      const operandAnalysis = analyzePositiveFilterProperty(operand, propertyName);
+
+      if (
+        operandAnalysis === null ||
+        !operandAnalysis.isExhaustive ||
+        !operandAnalysis.hasPositiveSelector ||
+        operandAnalysis.values.length === 0
+      ) {
+        return null;
+      }
+
+      for (const propertyValue of operandAnalysis.values) {
+        propertyValues.add(propertyValue);
+      }
+    }
+
+    return propertyValues.size === 0
+      ? null
+      : {
+          values: [...propertyValues],
+          isExhaustive: true,
+          hasPositiveSelector: true
+        };
   }
 
   if (operator === "==" && expression.length === 3) {
@@ -1617,45 +1678,84 @@ function getPositiveFilterPropertyValues(expression, propertyName) {
     const rightProperty = getFilterPropertyName(expression[2]);
 
     if (leftProperty === propertyName) {
-      return typeof expression[2] === "string" ? [expression[2]] : null;
+      return typeof expression[2] === "string"
+        ? { values: [expression[2]], isExhaustive: true, hasPositiveSelector: true }
+        : null;
     }
 
     if (rightProperty === propertyName) {
-      return typeof expression[1] === "string" ? [expression[1]] : null;
+      return typeof expression[1] === "string"
+        ? { values: [expression[1]], isExhaustive: true, hasPositiveSelector: true }
+        : null;
     }
 
-    return expressionContainsGet(expression, propertyName) ? null : [];
+    return expressionContainsGet(expression, propertyName)
+      ? null
+      : { values: [], isExhaustive: false, hasPositiveSelector: false };
   }
 
-  if (operator !== "match" || getFilterPropertyName(expression[1]) !== propertyName) {
-    return expressionContainsGet(expression, propertyName) ? null : [];
+  if (operator !== "match") {
+    return expressionContainsGet(expression, propertyName)
+      ? null
+      : { values: [], isExhaustive: false, hasPositiveSelector: false };
   }
 
   if (expression.length < 5 || expression.length % 2 === 0 || expression.at(-1) !== false) {
     return null;
   }
 
-  const propertyValues = new Set();
+  const positiveLabels = new Set();
 
   for (let index = 2; index < expression.length - 1; index += 2) {
     const output = expression[index + 1];
 
-    if (output !== true) {
+    if (output !== true && output !== false) {
       return null;
     }
 
     const labels = Array.isArray(expression[index]) ? expression[index] : [expression[index]];
 
-    if (labels.length === 0 || labels.some((label) => typeof label !== "string")) {
+    if (labels.length === 0) {
       return null;
     }
 
-    for (const label of labels) {
-      propertyValues.add(label);
+    if (output === true) {
+      for (const label of labels) {
+        positiveLabels.add(label);
+      }
     }
   }
 
-  return propertyValues.size === 0 ? null : [...propertyValues];
+  if (getFilterPropertyName(expression[1]) === propertyName) {
+    return [...positiveLabels].every((label) => typeof label === "string")
+      ? {
+          values: /** @type {string[]} */ ([...positiveLabels]),
+          isExhaustive: true,
+          hasPositiveSelector: true
+        }
+      : null;
+  }
+
+  if (
+    Array.isArray(expression[1]) &&
+    expression[1].length === 1 &&
+    expression[1][0] === "geometry-type"
+  ) {
+    const polygonGeometryLabels = new Set(["Polygon", "MultiPolygon"]);
+    const isPolygonGeometryGuard =
+      positiveLabels.size === polygonGeometryLabels.size &&
+      [...positiveLabels].every((label) => polygonGeometryLabels.has(label));
+
+    return {
+      values: [],
+      isExhaustive: isPolygonGeometryGuard,
+      hasPositiveSelector: false
+    };
+  }
+
+  return expressionContainsGet(expression, propertyName)
+    ? null
+    : { values: [], isExhaustive: false, hasPositiveSelector: false };
 }
 
 /**

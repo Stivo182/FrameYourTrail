@@ -2309,7 +2309,7 @@ describe("map helpers", () => {
         paint: { "fill-color": "#ffffff" }
       },
       {
-        id: "native-industrial-any-decoy",
+        id: "native-industrial-any-coverage",
         type: "fill",
         source: "openmaptiles",
         "source-layer": "landuse",
@@ -2317,6 +2317,22 @@ describe("map helpers", () => {
           "any",
           ["==", ["get", "class"], "industrial"],
           ["==", ["get", "class"], "garages"]
+        ],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-civic-match-coverage",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: [
+          "match",
+          ["get", "class"],
+          ["university", "kindergarten"],
+          true,
+          "college",
+          false,
+          false
         ],
         paint: { "fill-color": "#ffffff" }
       },
@@ -2401,14 +2417,14 @@ describe("map helpers", () => {
     expect(layerFilter("poster-landuse-industrial")).toEqual([
       "match",
       ["get", "class"],
-      ["industrial", "garages", "railway", "military", "dam"],
+      ["railway", "military", "dam"],
       true,
       false
     ]);
     expect(layerFilter("poster-landuse-civic")).toEqual([
       "match",
       ["get", "class"],
-      ["bus_station", "university", "kindergarten", "college", "library", "hospital", "school"],
+      ["bus_station", "college", "library", "hospital", "school"],
       true,
       false
     ]);
@@ -2495,6 +2511,40 @@ describe("map helpers", () => {
     }
   });
 
+  it("places landuse supplements below landcover when landcover source ownership is ambiguous", async () => {
+    const ambiguousStyle = cloneOpenFreeMapStyle();
+    ambiguousStyle.sources.alternateLandcover = {
+      type: "vector",
+      url: "https://example.test/alternate-landcover.json"
+    };
+    ambiguousStyle.layers.splice(2, 0, {
+      id: "alternate-landcover-owner",
+      type: "fill",
+      source: "alternateLandcover",
+      "source-layer": "landcover",
+      filter: ["==", ["get", "class"], "grass"],
+      paint: { "fill-color": "#ffffff" }
+    });
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(ambiguousStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const supplementalLanduseIds = EXPECTED_LANDUSE_AREA_GROUPS.flatMap((group) =>
+      layerIndex(group.id) === -1 ? [] : [group.id]
+    );
+
+    expect(supplementalLanduseIds.length).toBeGreaterThan(0);
+    expect(Math.max(...supplementalLanduseIds.map(layerIndex))).toBeLessThan(
+      layerIndex("alternate-landcover-owner")
+    );
+  });
+
   it("treats a native aeroway fill and its zoom policy as authoritative", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
@@ -2522,6 +2572,84 @@ describe("map helpers", () => {
     expect(layer("aeroway-taxiway")?.paint?.["line-color"]).toBe("#ddd5c5");
   });
 
+  it("treats a visible unfiltered native aeroway fill as complete polygon coverage", async () => {
+    const unfilteredStyle = cloneOpenFreeMapStyle();
+    unfilteredStyle.layers = unfilteredStyle.layers.map((styleLayer) => {
+      if (styleLayer.id !== "aeroway_fill") {
+        return styleLayer;
+      }
+
+      const unfilteredLayer = { ...styleLayer };
+      delete unfilteredLayer.filter;
+      return unfilteredLayer;
+    });
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(unfilteredStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+
+    expect(
+      style.layers.find((styleLayer) => styleLayer.id === "poster-aeroway-fill")
+    ).toBeUndefined();
+  });
+
+  it("keeps the aeroway fallback for narrowed, non-polygon, or hidden native fills", async () => {
+    const variants = [
+      {
+        id: "aeroway-class-narrowed",
+        filter: ["==", ["get", "class"], "apron"]
+      },
+      {
+        id: "aeroway-wrong-geometry",
+        filter: ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false]
+      },
+      {
+        id: "aeroway-extra-constraint",
+        filter: [
+          "all",
+          ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+          ["==", ["get", "class"], "apron"]
+        ]
+      },
+      {
+        id: "aeroway-hidden",
+        layout: { visibility: "none" }
+      }
+    ];
+
+    for (const variant of variants) {
+      const narrowedStyle = cloneOpenFreeMapStyle();
+      narrowedStyle.layers = narrowedStyle.layers.map((styleLayer) =>
+        styleLayer.id === "aeroway_fill" ? { ...styleLayer, ...variant } : styleLayer
+      );
+
+      const style = await loadMapStyle("openfreemap_poster", {
+        fetcher: vi.fn(
+          async () =>
+            new Response(JSON.stringify(narrowedStyle), {
+              headers: { "Content-Type": "application/json" }
+            })
+        )
+      });
+
+      expect(
+        style.layers.find((styleLayer) => styleLayer.id === "poster-aeroway-fill"),
+        variant.id
+      ).toMatchObject({
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "aeroway",
+        filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+        paint: { "fill-color": "#d5d0c7" }
+      });
+    }
+  });
+
   it("supplements only natural area class values missing from native fill coverage", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
@@ -2529,7 +2657,8 @@ describe("map helpers", () => {
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
     const expectedFilters = {
-      "poster-landcover-rock": ["==", ["get", "class"], "rock"]
+      "poster-landcover-rock": ["==", ["get", "class"], "rock"],
+      "poster-landcover-farmland": ["==", ["get", "class"], "farmland"]
     };
 
     expect(layer("natural-area-a")).toMatchObject({ minzoom: 9, maxzoom: 15 });
@@ -2541,7 +2670,13 @@ describe("map helpers", () => {
       filter: expectedFilters["poster-landcover-rock"],
       paint: { "fill-color": "#d2d0c7" }
     });
-    expect(layer("poster-landcover-farmland")).toBeUndefined();
+    expect(layer("poster-landcover-farmland")).toMatchObject({
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "landcover",
+      filter: expectedFilters["poster-landcover-farmland"],
+      paint: { "fill-color": "#d8d8b5" }
+    });
 
     for (const areaLayerId of Object.keys(expectedFilters)) {
       expect(layerIndex(areaLayerId)).toBeGreaterThan(layerIndex("background"));
