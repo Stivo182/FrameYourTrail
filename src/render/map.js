@@ -13,6 +13,7 @@ export const ROUTE_LINE_COLOR = "#c95b2e";
 
 const ROUTE_COLOR_PROPERTY = "routeColor";
 const ROUTE_MAP_FIT_PADDING_PIXELS = 48;
+const ROUTE_MAP_DETAIL_ENDPOINT_PADDING_PIXELS = 40;
 const ROUTE_MAP_DETAIL_MIN_ZOOM = 13;
 const SPEED_GRADIENT_COLORS = Object.freeze({
   slow: "#b94a3a",
@@ -822,13 +823,15 @@ function nudgeRouteMapToDetailZoom(map, bounds) {
     return;
   }
 
-  const noPaddingCamera = map.cameraForBounds(bounds, { padding: 0 });
-  const noPaddingZoom = noPaddingCamera?.zoom;
+  const safePaddingCamera = map.cameraForBounds(bounds, {
+    padding: ROUTE_MAP_DETAIL_ENDPOINT_PADDING_PIXELS
+  });
+  const safePaddingZoom = safePaddingCamera?.zoom;
 
   if (
-    typeof noPaddingZoom !== "number" ||
-    !Number.isFinite(noPaddingZoom) ||
-    noPaddingZoom < ROUTE_MAP_DETAIL_MIN_ZOOM
+    typeof safePaddingZoom !== "number" ||
+    !Number.isFinite(safePaddingZoom) ||
+    safePaddingZoom < ROUTE_MAP_DETAIL_MIN_ZOOM
   ) {
     return;
   }

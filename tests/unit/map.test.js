@@ -29,7 +29,8 @@ const maplibreMock = vi.hoisted(() => {
   let autoResolveEvents = true;
   let initialLoaded = false;
   let fitBoundsZoom = 0;
-  let cameraForBoundsResult;
+  /** @type {(bounds: any, options: any) => any} */
+  let cameraForBoundsResolver = () => undefined;
   const Map = vi.fn((options) => {
     let currentZoom = fitBoundsZoom;
     const instance = {
@@ -88,7 +89,7 @@ const maplibreMock = vi.hoisted(() => {
         currentZoom = fitBoundsZoom;
       }),
       getZoom: vi.fn(() => currentZoom),
-      cameraForBounds: vi.fn(() => cameraForBoundsResult),
+      cameraForBounds: vi.fn((bounds, options) => cameraForBoundsResolver(bounds, options)),
       jumpTo: vi.fn((camera) => {
         if (Number.isFinite(camera?.zoom)) {
           currentZoom = camera.zoom;
@@ -125,8 +126,8 @@ const maplibreMock = vi.hoisted(() => {
     setFitBoundsZoom(value) {
       fitBoundsZoom = value;
     },
-    setCameraForBoundsResult(value) {
-      cameraForBoundsResult = value;
+    setCameraForBoundsResolver(value) {
+      cameraForBoundsResolver = value;
     }
   };
 });
@@ -800,7 +801,7 @@ describe("map helpers", () => {
     maplibreMock.setAutoResolveEvents(true);
     maplibreMock.setInitialLoaded(false);
     maplibreMock.setFitBoundsZoom(0);
-    maplibreMock.setCameraForBoundsResult(undefined);
+    maplibreMock.setCameraForBoundsResolver(() => undefined);
     maplibreMock.Map.mockClear();
     vi.stubGlobal(
       "fetch",
@@ -2951,10 +2952,12 @@ describe("map helpers", () => {
     expect(host.querySelector(".static-map-fallback")).toBeNull();
   });
 
-  it("nudges near-detail OpenFreeMap route maps to building source zoom only when the full route still fits", async () => {
+  it("nudges near-detail OpenFreeMap route maps at the safe-padding zoom boundary", async () => {
     const host = document.createElement("div");
     maplibreMock.setFitBoundsZoom(12.84);
-    maplibreMock.setCameraForBoundsResult({ zoom: 13.04 });
+    maplibreMock.setCameraForBoundsResolver((_bounds, options) => ({
+      zoom: options.padding === 40 ? 13 : 13.04
+    }));
 
     await initRouteMap(host, points, createI18n("en"));
 
@@ -2968,40 +2971,102 @@ describe("map helpers", () => {
       padding: 48,
       duration: 0
     });
-    expect(map.cameraForBounds).toHaveBeenCalledWith(expectedBounds, { padding: 0 });
+    expect(map.cameraForBounds).toHaveBeenCalledWith(expectedBounds, { padding: 40 });
     expect(map.jumpTo).toHaveBeenCalledWith({ zoom: 13 });
     expect(map.getZoom()).toBe(13);
   });
 
-  it.each(["osm_standard", "cyclosm"])(
-    "keeps the padded fit for the %s raster style even when detail zoom would fit without padding",
-    async (mapStyleId) => {
-      const host = document.createElement("div");
-      maplibreMock.setFitBoundsZoom(12.84);
-      maplibreMock.setCameraForBoundsResult({ zoom: 13.04 });
+  it("keeps the initial padded fit when detail zoom only fits without endpoint padding", async () => {
+    const host = document.createElement("div");
+    maplibreMock.setFitBoundsZoom(12.84);
+    maplibreMock.setCameraForBoundsResolver((_bounds, options) => ({
+      zoom: options.padding === 0 ? 13.04 : 12.92
+    }));
 
-      await initRouteMap(host, points, createI18n("en"), [], {}, mapStyleId);
+    await initRouteMap(host, points, createI18n("en"));
 
-      const map = maplibreMock.instances[0];
+    const map = maplibreMock.instances[0];
+    const expectedBounds = [
+      [42.1, 43.1],
+      [42.2, 43.2]
+    ];
 
-      expect(map.cameraForBounds).not.toHaveBeenCalled();
-      expect(map.jumpTo).not.toHaveBeenCalled();
-      expect(map.getZoom()).toBe(12.84);
-    }
-  );
+    expect(map.fitBounds).toHaveBeenCalledWith(expectedBounds, {
+      padding: 48,
+      duration: 0
+    });
+    expect(map.jumpTo).not.toHaveBeenCalled();
+    expect(map.getZoom()).toBe(12.84);
+    expect(map.cameraForBounds).toHaveBeenCalledWith(expectedBounds, { padding: 40 });
+  });
+
+  it.each(["osm_standard", "cyclosm"])("never nudges the %s raster style", async (mapStyleId) => {
+    const host = document.createElement("div");
+    maplibreMock.setFitBoundsZoom(12.84);
+    maplibreMock.setCameraForBoundsResolver(() => ({ zoom: 13.04 }));
+
+    await initRouteMap(host, points, createI18n("en"), [], {}, mapStyleId);
+
+    const map = maplibreMock.instances[0];
+
+    expect(map.cameraForBounds).not.toHaveBeenCalled();
+    expect(map.jumpTo).not.toHaveBeenCalled();
+    expect(map.getZoom()).toBe(12.84);
+  });
 
   it("keeps the fitted zoom for routes too wide to safely reach building source zoom", async () => {
     const host = document.createElement("div");
     maplibreMock.setFitBoundsZoom(12.4);
-    maplibreMock.setCameraForBoundsResult({ zoom: 12.92 });
+    maplibreMock.setCameraForBoundsResolver(() => ({ zoom: 12.92 }));
+
+    await initRouteMap(host, points, createI18n("en"));
+
+    const map = maplibreMock.instances[0];
+    const expectedBounds = [
+      [42.1, 43.1],
+      [42.2, 43.2]
+    ];
+
+    expect(map.cameraForBounds).toHaveBeenCalledWith(expectedBounds, { padding: 40 });
+    expect(map.jumpTo).not.toHaveBeenCalled();
+    expect(map.getZoom()).toBe(12.4);
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["non-finite", { zoom: Number.NaN }]
+  ])("keeps the fitted zoom when the safe-padding camera zoom is %s", async (_label, camera) => {
+    const host = document.createElement("div");
+    maplibreMock.setFitBoundsZoom(12.4);
+    maplibreMock.setCameraForBoundsResolver(() => camera);
 
     await initRouteMap(host, points, createI18n("en"));
 
     const map = maplibreMock.instances[0];
 
-    expect(map.cameraForBounds).toHaveBeenCalled();
+    expect(map.cameraForBounds).toHaveBeenCalledWith(
+      [
+        [42.1, 43.1],
+        [42.2, 43.2]
+      ],
+      { padding: 40 }
+    );
     expect(map.jumpTo).not.toHaveBeenCalled();
     expect(map.getZoom()).toBe(12.4);
+  });
+
+  it("does not resolve a detail camera when the fitted OpenFreeMap zoom is already detailed", async () => {
+    const host = document.createElement("div");
+    maplibreMock.setFitBoundsZoom(13);
+    maplibreMock.setCameraForBoundsResolver(() => ({ zoom: 14 }));
+
+    await initRouteMap(host, points, createI18n("en"));
+
+    const map = maplibreMock.instances[0];
+
+    expect(map.cameraForBounds).not.toHaveBeenCalled();
+    expect(map.jumpTo).not.toHaveBeenCalled();
+    expect(map.getZoom()).toBe(13);
   });
 
   it("removes a pending MapLibre instance when initialization is aborted", async () => {

@@ -551,9 +551,9 @@ Map requirements:
 - localized start and finish endpoint labels
 - bounds fitted to the loaded route with compact padding so nearby map detail
   remains visible; near-detail OpenFreeMap route maps may tighten the fit to
-  source zoom 13 when the full route still fits without padding, so building
-  and path detail can appear on routes that are just below the building source
-  zoom
+  source zoom 13 when the route and endpoint overlays still fit with compact
+  safe padding, so building and path detail can appear on routes that are just
+  below the building source zoom
 - road names, named trail/path/track labels, trail/path/track linework, and
   cable lift/aerialway detail stay visually distinct within the poster palette
   where the loaded OpenFreeMap style advertises the underlying vector data;
