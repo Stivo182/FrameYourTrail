@@ -105,6 +105,14 @@ describe("OpenFreeMap live contract checker", () => {
 
     expect(featuresById.get("miyajima-ropeway-label").properties.name).toBe("宮島ロープウエー");
     expect(featuresById.get("jr-miyajima-ferry-label").properties.name).toBe("JR宮島連絡船");
+    expect(featuresById.get("miyajima-ropeway-label").properties).toMatchObject({
+      "name:latin": "Miyajima Ropeway",
+      "name:nonlatin": "宮島ロープウエー"
+    });
+    expect(featuresById.get("jr-miyajima-ferry-label").properties).toMatchObject({
+      "name:latin": "JR Miyajima Ferry",
+      "name:nonlatin": "宮島連絡船"
+    });
   });
 
   it("matches every filter-relevant provider property while ignoring unrelated properties", async () => {
@@ -117,6 +125,7 @@ describe("OpenFreeMap live contract checker", () => {
         name_en: "Miyajima Ropeway",
         "name:en": "Miyajima Ropeway",
         "name:latin": "Miyajima Ropeway",
+        "name:nonlatin": "宮島ロープウエー",
         class: "aerialway",
         subclass: "cable_car",
         rank: 1,
@@ -131,6 +140,7 @@ describe("OpenFreeMap live contract checker", () => {
         name_en: "Miyajima Ropeway",
         "name:en": "Miyajima Ropeway",
         "name:latin": "Miyajima Ropeway",
+        "name:nonlatin": "宮島ロープウエー",
         class: "aerialway",
         subclass: "cable_car",
         rank: 1,
@@ -146,6 +156,7 @@ describe("OpenFreeMap live contract checker", () => {
       "name_en",
       "name:en",
       "name:latin",
+      "name:nonlatin",
       "rank"
     ]) {
       const candidate = structuredClone(matchingFeature);
@@ -165,6 +176,21 @@ describe("OpenFreeMap live contract checker", () => {
         geometryType: "Point"
       })
     ).toBe(false);
+  });
+
+  it("rejects provider candidates with corrupt or missing name:nonlatin", async () => {
+    const { featureMatchesContract } = await loadChecker();
+    const contractFeature = readProviderFixture().features.find(
+      (feature) => feature.id === "miyajima-ropeway-label"
+    );
+    const corruptCandidate = structuredClone(contractFeature);
+    const missingCandidate = structuredClone(contractFeature);
+
+    corruptCandidate.properties["name:nonlatin"] = "宮島ロープウェイ";
+    delete missingCandidate.properties["name:nonlatin"];
+
+    expect(featureMatchesContract(contractFeature, corruptCandidate)).toBe(false);
+    expect(featureMatchesContract(contractFeature, missingCandidate)).toBe(false);
   });
 
   it("rejects a motorway candidate without its base name from the contract and generated filter", async () => {

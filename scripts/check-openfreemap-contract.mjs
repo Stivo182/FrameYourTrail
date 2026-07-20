@@ -26,6 +26,7 @@ const FILTER_RELEVANT_PROPERTY_KEYS = [
   "name_en",
   "name:en",
   "name:latin",
+  "name:nonlatin",
   "rank"
 ];
 

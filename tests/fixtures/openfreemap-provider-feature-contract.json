@@ -43,7 +43,9 @@
         "name": "宮島ロープウエー",
         "class": "aerialway",
         "subclass": "cable_car",
-        "name_en": "Miyajima Ropeway"
+        "name_en": "Miyajima Ropeway",
+        "name:latin": "Miyajima Ropeway",
+        "name:nonlatin": "宮島ロープウエー"
       }
     },
     {
@@ -79,7 +81,9 @@
       "properties": {
         "name": "JR宮島連絡船",
         "class": "ferry",
-        "name_en": "JR Miyajima Ferry"
+        "name_en": "JR Miyajima Ferry",
+        "name:latin": "JR Miyajima Ferry",
+        "name:nonlatin": "宮島連絡船"
       }
     },
     {
