@@ -1,6 +1,6 @@
 import { getBounds, haversineMeters } from "../core/geo.js";
 import { createI18n } from "../i18n/index.js";
-import { DEFAULT_MAP_STYLE_ID, loadMapStyle } from "./map-styles.js";
+import { DEFAULT_MAP_STYLE_ID, loadMapStyle, normalizeMapStyleId } from "./map-styles.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
@@ -8,6 +8,7 @@ export const ROUTE_LINE_COLOR = "#c95b2e";
 
 const ROUTE_COLOR_PROPERTY = "routeColor";
 const ROUTE_MAP_FIT_PADDING_PIXELS = 48;
+const ROUTE_MAP_DETAIL_MIN_ZOOM = 13;
 const SPEED_GRADIENT_COLORS = Object.freeze({
   slow: "#b94a3a",
   medium: "#d99a3a",
@@ -752,13 +753,14 @@ export async function initRouteMap(
     });
 
     const bounds = getBounds(points);
-    map.fitBounds(
-      [
-        [bounds.minLongitude, bounds.minLatitude],
-        [bounds.maxLongitude, bounds.maxLatitude]
-      ],
-      { padding: ROUTE_MAP_FIT_PADDING_PIXELS, duration: 0 }
-    );
+    const mapBounds = /** @type {[[number, number], [number, number]]} */ ([
+      [bounds.minLongitude, bounds.minLatitude],
+      [bounds.maxLongitude, bounds.maxLatitude]
+    ]);
+    map.fitBounds(mapBounds, { padding: ROUTE_MAP_FIT_PADDING_PIXELS, duration: 0 });
+    if (normalizeMapStyleId(mapStyleId) === DEFAULT_MAP_STYLE_ID) {
+      nudgeRouteMapToDetailZoom(map, mapBounds);
+    }
 
     throwIfRouteMapAborted(signal);
     onMapInitialized?.(map);
@@ -788,6 +790,31 @@ export async function initRouteMap(
     }
     return { status: "fallback", error };
   }
+}
+
+/**
+ * @param {import("maplibre-gl").Map} map
+ * @param {[[number, number], [number, number]]} bounds
+ */
+function nudgeRouteMapToDetailZoom(map, bounds) {
+  const currentZoom = map.getZoom();
+
+  if (!Number.isFinite(currentZoom) || currentZoom >= ROUTE_MAP_DETAIL_MIN_ZOOM) {
+    return;
+  }
+
+  const noPaddingCamera = map.cameraForBounds(bounds, { padding: 0 });
+  const noPaddingZoom = noPaddingCamera?.zoom;
+
+  if (
+    typeof noPaddingZoom !== "number" ||
+    !Number.isFinite(noPaddingZoom) ||
+    noPaddingZoom < ROUTE_MAP_DETAIL_MIN_ZOOM
+  ) {
+    return;
+  }
+
+  map.jumpTo({ zoom: ROUTE_MAP_DETAIL_MIN_ZOOM });
 }
 
 export function createRouteMapRenderer() {
