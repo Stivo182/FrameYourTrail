@@ -797,22 +797,19 @@ function createSupplementalPosterTransportLineLayers() {
 }
 
 /**
- * Returns the first textual symbol index after the final non-symbol layer.
- * Icon-only symbols stay in the geometry tier. If no text-label tier exists,
- * the fail-safe boundary is the end of the layer list.
+ * Returns the first textual symbol index after the final non-symbol layer, or
+ * from the start when no non-symbol layer exists. Icon-only symbols stay in
+ * the geometry tier. If no text-label tier exists, the fail-safe boundary is
+ * the end of the layer list.
  *
  * @param {unknown[]} layers
  */
 export function getMapTextLabelBoundaryIndex(layers) {
   const finalNonSymbolIndex = layers.findLastIndex((layer) => getLayerType(layer) !== "symbol");
+  const searchStartIndex = finalNonSymbolIndex + 1;
+  const textLabelOffset = layers.slice(searchStartIndex).findIndex(isMapTextLabelLayer);
 
-  if (finalNonSymbolIndex === -1) {
-    return layers.length;
-  }
-
-  const textLabelOffset = layers.slice(finalNonSymbolIndex + 1).findIndex(isMapTextLabelLayer);
-
-  return textLabelOffset === -1 ? layers.length : finalNonSymbolIndex + textLabelOffset + 1;
+  return textLabelOffset === -1 ? layers.length : searchStartIndex + textLabelOffset;
 }
 
 /**

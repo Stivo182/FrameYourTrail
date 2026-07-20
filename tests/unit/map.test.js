@@ -801,6 +801,12 @@ describe("map helpers", () => {
     ).toBe(4);
     expect(
       getMapTextLabelBoundaryIndex([
+        { id: "place-label", type: "symbol", layout: { "text-field": ["get", "name"] } },
+        { id: "road-label", type: "symbol", layout: { "text-field": ["get", "name"] } }
+      ])
+    ).toBe(0);
+    expect(
+      getMapTextLabelBoundaryIndex([
         { id: "early-arrow", type: "symbol" },
         { id: "early-shield", type: "symbol" }
       ])
