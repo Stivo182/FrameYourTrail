@@ -178,15 +178,29 @@ const OPENFREEMAP_POINT_NAME_FILTER = Object.freeze([
   ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false]
 ]);
 
+const OPENFREEMAP_LIGHTHOUSE_TERMS = Object.freeze(["lighthouse", "light house", "\u706f\u53f0"]);
+const OPENFREEMAP_LIGHTHOUSE_NAME_FILTER = Object.freeze([
+  "any",
+  ...["name", "name_en", "name:latin"].flatMap((nameField) =>
+    OPENFREEMAP_LIGHTHOUSE_TERMS.map((term) => [
+      "!=",
+      ["index-of", term, ["downcase", ["coalesce", ["get", nameField], ""]]],
+      -1
+    ])
+  )
+]);
+
 const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "poster-park-label",
     sourceLayer: "park",
+    minzoom: 10,
     textSize: 11
   }),
   Object.freeze({
     id: "poster-mountain-peak-label",
     sourceLayer: "mountain_peak",
+    minzoom: 9,
     textSize: 10
   }),
   Object.freeze({
@@ -280,18 +294,14 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "poster-lighthouse-label",
     sourceLayer: "poi",
+    minzoom: 12,
     textSize: 9,
     filter: [
       "all",
       ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
       ["has", "name"],
       ["match", ["get", "class"], ["attraction", "museum"], true, false],
-      [
-        "any",
-        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name"], ""]]], -1],
-        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name_en"], ""]]], -1],
-        ["!=", ["index-of", "light", ["downcase", ["coalesce", ["get", "name:latin"], ""]]], -1]
-      ]
+      OPENFREEMAP_LIGHTHOUSE_NAME_FILTER
     ],
     layout: {
       "symbol-placement": "point"
@@ -623,8 +633,8 @@ function insertSupplementalPosterDetailLayers(layers) {
   return [
     ...layersWithAreas.slice(0, insertionIndex),
     ...createSupplementalPosterTransportLineLayers(),
-    ...layersWithAreas.slice(insertionIndex),
-    ...createSupplementalPosterLabelLayers()
+    ...createSupplementalPosterLabelLayers(),
+    ...layersWithAreas.slice(insertionIndex)
   ];
 }
 

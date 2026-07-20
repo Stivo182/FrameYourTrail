@@ -649,6 +649,7 @@ export async function initRouteMap(
       loadMapStyle(mapStyleId)
     ]);
     throwIfRouteMapAborted(signal);
+    const firstSymbolLayerId = openFreeMapStyle.layers.find((layer) => layer.type === "symbol")?.id;
 
     map = new maplibregl.Map({
       container: mapNode,
@@ -681,40 +682,46 @@ export async function initRouteMap(
         createEndpointGeoJson(points, i18n)
       )
     });
-    map.addLayer({
-      id: "route-line-halo",
-      type: "line",
-      source: "route",
-      paint: {
-        "line-color": "#ffffff",
-        "line-width": 12,
-        "line-opacity": 0.9
+    map.addLayer(
+      {
+        id: "route-line-halo",
+        type: "line",
+        source: "route",
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": 12,
+          "line-opacity": 0.9
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        }
       },
-      layout: {
-        "line-cap": "round",
-        "line-join": "round"
-      }
-    });
-    map.addLayer({
-      id: "route-line",
-      type: "line",
-      source: "route",
-      paint: {
-        ...(routeGradient
-          ? { "line-gradient": routeGradient }
-          : {
-              "line-color": hasSpeedSegments
-                ? ["coalesce", ["get", ROUTE_COLOR_PROPERTY], ROUTE_LINE_COLOR]
-                : ROUTE_LINE_COLOR
-            }),
-        "line-width": 7,
-        "line-opacity": 0.96
+      firstSymbolLayerId
+    );
+    map.addLayer(
+      {
+        id: "route-line",
+        type: "line",
+        source: "route",
+        paint: {
+          ...(routeGradient
+            ? { "line-gradient": routeGradient }
+            : {
+                "line-color": hasSpeedSegments
+                  ? ["coalesce", ["get", ROUTE_COLOR_PROPERTY], ROUTE_LINE_COLOR]
+                  : ROUTE_LINE_COLOR
+              }),
+          "line-width": 7,
+          "line-opacity": 0.96
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        }
       },
-      layout: {
-        "line-cap": "round",
-        "line-join": "round"
-      }
-    });
+      firstSymbolLayerId
+    );
     map.addLayer({
       id: "route-endpoint-circles",
       type: "circle",
