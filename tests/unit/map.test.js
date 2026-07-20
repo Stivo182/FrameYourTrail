@@ -2274,7 +2274,7 @@ describe("map helpers", () => {
     expect(layer("poster-landuse-quarry")).toBeUndefined();
   });
 
-  it("extracts only unambiguous positive native class coverage", async () => {
+  it("uses only rendered exhaustive positive native class coverage", async () => {
     const coverageStyle = cloneOpenFreeMapStyle();
     coverageStyle.layers = coverageStyle.layers.filter(
       (styleLayer) => !(styleLayer.type === "fill" && styleLayer["source-layer"] === "landuse")
@@ -2387,6 +2387,39 @@ describe("map helpers", () => {
           ["==", ["get", "class"], "neighbourhood"]
         ],
         paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-quarter-hidden",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "class"], "quarter"],
+        layout: { visibility: "none" },
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-neighbourhood-transparent",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "class"], "neighbourhood"],
+        paint: { "fill-color": "#ffffff", "fill-opacity": 0 }
+      },
+      {
+        id: "native-dam-data-opacity",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "class"], "dam"],
+        paint: { "fill-color": "#ffffff", "fill-opacity": ["get", "opacity"] }
+      },
+      {
+        id: "native-railway-visible-opacity",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "class"], "railway"],
+        paint: { "fill-color": "#ffffff", "fill-opacity": 0.7 }
       }
     );
 
@@ -2417,7 +2450,7 @@ describe("map helpers", () => {
     expect(layerFilter("poster-landuse-industrial")).toEqual([
       "match",
       ["get", "class"],
-      ["railway", "military", "dam"],
+      ["military", "dam"],
       true,
       false
     ]);
@@ -2598,7 +2631,7 @@ describe("map helpers", () => {
     ).toBeUndefined();
   });
 
-  it("keeps the aeroway fallback for narrowed, non-polygon, or hidden native fills", async () => {
+  it("keeps the aeroway fallback without rendered full-domain native coverage", async () => {
     const variants = [
       {
         id: "aeroway-class-narrowed",
@@ -2619,6 +2652,14 @@ describe("map helpers", () => {
       {
         id: "aeroway-hidden",
         layout: { visibility: "none" }
+      },
+      {
+        id: "aeroway-transparent",
+        paint: { "fill-opacity": 0 }
+      },
+      {
+        id: "aeroway-data-opacity",
+        paint: { "fill-opacity": ["get", "opacity"] }
       }
     ];
 

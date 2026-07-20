@@ -899,7 +899,7 @@ function getNativePosterAreaClassCoverage(layers, source, definition) {
   const coveredClassValues = new Set();
 
   for (const layer of layers) {
-    if (!isResolvedSourceFillLayer(layer, source, definition.sourceLayer)) {
+    if (!isRenderedResolvedSourceFillLayer(layer, source, definition.sourceLayer)) {
       continue;
     }
 
@@ -927,25 +927,49 @@ function getNativePosterAreaClassCoverage(layers, source, definition) {
  */
 function hasNativePosterAreaFillCoverage(layers, source, sourceLayer) {
   return layers.some((layer) => {
-    if (!isResolvedSourceFillLayer(layer, source, sourceLayer)) {
+    if (!isRenderedResolvedSourceFillLayer(layer, source, sourceLayer)) {
       return false;
     }
 
-    const layerObject = /** @type {{ filter?: unknown, layout?: unknown }} */ (layer);
-    const layout =
-      layerObject.layout &&
-      typeof layerObject.layout === "object" &&
-      !Array.isArray(layerObject.layout)
-        ? /** @type {{ visibility?: unknown }} */ (layerObject.layout)
-        : {};
+    const layerObject = /** @type {{ filter?: unknown }} */ (layer);
     const classAnalysis = analyzePositiveFilterProperty(layerObject.filter, "class");
 
-    return (
-      layout.visibility !== "none" &&
-      classAnalysis?.isExhaustive === true &&
-      !classAnalysis.hasPositiveSelector
-    );
+    return classAnalysis?.isExhaustive === true && !classAnalysis.hasPositiveSelector;
   });
+}
+
+/**
+ * @param {unknown} layer
+ * @param {string} source
+ * @param {string} sourceLayer
+ */
+function isRenderedResolvedSourceFillLayer(layer, source, sourceLayer) {
+  if (!isResolvedSourceFillLayer(layer, source, sourceLayer)) {
+    return false;
+  }
+
+  const layerObject = /** @type {{ layout?: unknown, paint?: unknown }} */ (layer);
+  const layout =
+    layerObject.layout &&
+    typeof layerObject.layout === "object" &&
+    !Array.isArray(layerObject.layout)
+      ? /** @type {{ visibility?: unknown }} */ (layerObject.layout)
+      : {};
+  const paint =
+    layerObject.paint && typeof layerObject.paint === "object" && !Array.isArray(layerObject.paint)
+      ? /** @type {Record<string, unknown>} */ (layerObject.paint)
+      : {};
+
+  if (layout.visibility === "none") {
+    return false;
+  }
+
+  if (!Object.hasOwn(paint, "fill-opacity")) {
+    return true;
+  }
+
+  const fillOpacity = paint["fill-opacity"];
+  return typeof fillOpacity === "number" && Number.isFinite(fillOpacity) && fillOpacity > 0;
 }
 
 /**
