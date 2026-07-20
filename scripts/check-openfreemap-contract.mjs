@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 import { VectorTile } from "@mapbox/vector-tile";
-import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
+import { featureFilter, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import Pbf from "pbf";
 
 import { DEFAULT_MAP_STYLE_ID, loadMapStyle } from "../src/render/map-styles.js";
@@ -19,6 +19,15 @@ const PROVIDER_FIXTURE_PATH = resolve(
   "../tests/fixtures/openfreemap-provider-feature-contract.json"
 );
 const VECTOR_TILE_GEOMETRY_TYPES = ["Unknown", "Point", "LineString", "Polygon"];
+const FILTER_RELEVANT_PROPERTY_KEYS = [
+  "class",
+  "subclass",
+  "name",
+  "name_en",
+  "name:en",
+  "name:latin",
+  "rank"
+];
 
 function formatError(error) {
   return error instanceof Error ? error.message : String(error);
@@ -187,20 +196,10 @@ function normalizeGeometryType(type) {
 function getRelevantContractProperties(properties) {
   const relevantProperties = {};
 
-  for (const key of ["class", "subclass"]) {
+  for (const key of FILTER_RELEVANT_PROPERTY_KEYS) {
     if (Object.hasOwn(properties, key)) {
       relevantProperties[key] = properties[key];
     }
-  }
-
-  const stableNameKey = Object.hasOwn(properties, "name_en")
-    ? "name_en"
-    : Object.hasOwn(properties, "name")
-      ? "name"
-      : null;
-
-  if (stableNameKey) {
-    relevantProperties[stableNameKey] = properties[stableNameKey];
   }
 
   return relevantProperties;
@@ -222,6 +221,66 @@ export function featureMatchesContract(contractFeature, candidateFeature) {
   return Object.entries(getRelevantContractProperties(contractFeature.properties)).every(
     ([key, value]) => Object.is(candidateFeature.properties[key], value)
   );
+}
+
+function createPosterFeatureFilter(contractFeature, posterStyle) {
+  const sampleId = String(contractFeature.id);
+  const posterLayerId = contractFeature.posterLayerId;
+
+  if (typeof posterLayerId !== "string" || posterLayerId === "") {
+    throw new Error(`provider sample "${sampleId}" has no posterLayerId`);
+  }
+
+  const posterLayer = Array.isArray(posterStyle.layers)
+    ? posterStyle.layers.find((layer) => layer.id === posterLayerId)
+    : undefined;
+
+  if (!posterLayer) {
+    throw new Error(
+      `provider sample "${sampleId}" target poster layer "${posterLayerId}" is missing`
+    );
+  }
+
+  if (!Object.hasOwn(posterLayer, "filter") || posterLayer.filter == null) {
+    throw new Error(
+      `provider sample "${sampleId}" target poster layer "${posterLayerId}" has no filter`
+    );
+  }
+
+  if (posterLayer["source-layer"] !== contractFeature.sourceLayer) {
+    throw new Error(
+      `provider sample "${sampleId}" target poster layer "${posterLayerId}" uses source-layer "${String(posterLayer["source-layer"])}" instead of "${contractFeature.sourceLayer}"`
+    );
+  }
+
+  let compiledFilter;
+
+  try {
+    compiledFilter = featureFilter(posterLayer.filter).filter;
+  } catch (error) {
+    throw new Error(
+      `provider sample "${sampleId}" target poster layer "${posterLayerId}" filter could not be compiled: ${formatError(error)}`,
+      { cause: error }
+    );
+  }
+
+  return (candidateFeature) =>
+    compiledFilter(
+      { zoom: contractFeature.tile.z },
+      {
+        type: candidateFeature.geometryType,
+        properties: candidateFeature.properties
+      }
+    );
+}
+
+/**
+ * @param {{ id: string, posterLayerId: string, sourceLayer: string, tile: { z: number } }} contractFeature
+ * @param {{ geometryType: string, properties: Record<string, unknown> }} candidateFeature
+ * @param {{ layers?: Array<Record<string, unknown>> }} posterStyle
+ */
+export function featurePassesPosterFilter(contractFeature, candidateFeature, posterStyle) {
+  return createPosterFeatureFilter(contractFeature, posterStyle)(candidateFeature);
 }
 
 function decodeVectorTile(buffer, requiredSourceLayers) {
@@ -277,7 +336,7 @@ function getTileKey(tile) {
   return `${tile.z}/${tile.x}/${tile.y}`;
 }
 
-async function assertProviderContract(providerFixture, tileTemplate, options = {}) {
+async function assertProviderContract(providerFixture, tileTemplate, posterStyle, options = {}) {
   const contractFeatures = Array.isArray(providerFixture.features) ? providerFixture.features : [];
   const featuresByTile = new Map();
 
@@ -303,9 +362,29 @@ async function assertProviderContract(providerFixture, tileTemplate, options = {
       const decodedFeatures = decodeVectorTile(buffer, requiredSourceLayers);
 
       for (const contractFeature of tileGroup.features) {
-        if (!decodedFeatures.some((feature) => featureMatchesContract(contractFeature, feature))) {
+        let posterFilter;
+
+        try {
+          posterFilter = createPosterFeatureFilter(contractFeature, posterStyle);
+        } catch (error) {
+          failures.push(formatError(error));
+          continue;
+        }
+
+        const matchingFeatures = decodedFeatures.filter((feature) =>
+          featureMatchesContract(contractFeature, feature)
+        );
+
+        if (matchingFeatures.length === 0) {
           failures.push(
             `${contractFeature.id} missing from ${tileKey} (${contractFeature.sourceLayer}/${contractFeature.geometryType}, ${JSON.stringify(getRelevantContractProperties(contractFeature.properties))})`
+          );
+          continue;
+        }
+
+        if (!matchingFeatures.some(posterFilter)) {
+          failures.push(
+            `${contractFeature.id} matched ${tileKey} but was rejected by target poster layer "${contractFeature.posterLayerId}" filter`
           );
         }
       }
@@ -368,7 +447,7 @@ export async function runOpenFreeMapContractCheck() {
   }
 
   const tileTemplate = getCurrentTileTemplate(tileJson);
-  const providerResult = await assertProviderContract(providerFixture, tileTemplate);
+  const providerResult = await assertProviderContract(providerFixture, tileTemplate, posterStyle);
 
   console.log(
     `Liberty contract matches ${libertyResult.layerCount} captured layers and ${libertyResult.sourceCount} sources.`

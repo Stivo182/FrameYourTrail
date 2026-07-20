@@ -1121,86 +1121,56 @@ describe("map helpers", () => {
   it("matches captured provider features with generated supplemental filters", async () => {
     const libertyFixture = readOpenFreeMapLibertyContractFixture();
     const providerFixture = readOpenFreeMapProviderFeatureContractFixture();
-    const posterLayerIdByFeatureId = {
-      "miyajima-ropeway-line": "poster-aerialway-line",
-      "miyajima-ropeway-label": "poster-aerialway-label",
-      "jr-miyajima-ferry-line": "poster-shipway-line",
-      "jr-miyajima-ferry-label": "poster-shipway-label",
-      "john-fitzgerald-expressway-label": "poster-highway-name-motorway",
-      "westerheversand-lighthouse-label": "poster-lighthouse-label"
-    };
-    expect(providerFixture.metadata).toEqual({
-      tilesetUrlTemplate: "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
-      capturedOn: "2026-07-20",
-      decoder: "@mapbox/vector-tile 2.0.4",
-      curatedScope:
-        "Decoded representative aerialway, ferry, motorway name, and lighthouse POI features for poster provider extension contracts"
-    });
-    expect(providerFixture.features.map((feature) => feature.id)).toEqual([
-      "miyajima-ropeway-line",
-      "miyajima-ropeway-label",
-      "jr-miyajima-ferry-line",
-      "jr-miyajima-ferry-label",
-      "john-fitzgerald-expressway-label",
-      "westerheversand-lighthouse-label"
-    ]);
-    const featureProvenance = providerFixture.features.map((feature) => ({
-      tile: `${feature.tile.z}/${feature.tile.x}/${feature.tile.y}`,
-      layer: feature.sourceLayer,
-      featureIndex: feature.featureIndex,
-      featureId: feature.featureId
-    }));
+    const requiredMetadataFields = ["tilesetUrlTemplate", "capturedOn", "decoder", "curatedScope"];
 
-    expect(featureProvenance).toEqual([
-      {
-        tile: "14/14214/6528",
-        layer: "transportation",
-        featureIndex: "27",
-        featureId: "416666932"
-      },
-      {
-        tile: "14/14214/6528",
-        layer: "transportation_name",
-        featureIndex: "4",
-        featureId: "416666930"
-      },
-      {
-        tile: "14/14213/6528",
-        layer: "transportation",
-        featureIndex: "6",
-        featureId: "419619980"
-      },
-      {
-        tile: "14/14213/6528",
-        layer: "transportation_name",
-        featureIndex: "0",
-        featureId: "419619982"
-      },
-      {
-        tile: "14/4957/6059",
-        layer: "transportation_name",
-        featureIndex: "10",
-        featureId: "489820340"
-      },
-      {
-        tile: "14/8585/5231",
-        layer: "poi",
-        featureIndex: "0",
-        featureId: "875341692"
+    for (const field of requiredMetadataFields) {
+      expect(providerFixture.metadata[field], field).toEqual(expect.any(String));
+      expect(providerFixture.metadata[field].trim(), field).not.toBe("");
+    }
+
+    expect(providerFixture.metadata.tilesetUrlTemplate).toContain("{z}");
+    expect(providerFixture.metadata.tilesetUrlTemplate).toContain("{x}");
+    expect(providerFixture.metadata.tilesetUrlTemplate).toContain("{y}");
+    expect(providerFixture.features.length).toBeGreaterThan(0);
+
+    const featureIds = [];
+    const featureProvenance = [];
+
+    for (const feature of providerFixture.features) {
+      for (const field of ["id", "posterLayerId", "sourceLayer", "geometryType"]) {
+        expect(feature[field], `${feature.id}.${field}`).toEqual(expect.any(String));
+        expect(feature[field].trim(), `${feature.id}.${field}`).not.toBe("");
       }
-    ]);
-    expect(
-      featureProvenance.every((provenance) =>
-        Object.values(provenance).every((value) => value !== "")
-      )
-    ).toBe(true);
-    expect(
-      new Set(
-        featureProvenance.map(({ tile, layer, featureIndex, featureId }) =>
-          [tile, layer, featureIndex, featureId].join("/")
-        )
-      ).size
-    ).toBe(featureProvenance.length);
+
+      expect(Number.isInteger(feature.tile.z)).toBe(true);
+      expect(Number.isInteger(feature.tile.x)).toBe(true);
+      expect(Number.isInteger(feature.tile.y)).toBe(true);
+      expect(feature.featureIndex).toEqual(expect.any(String));
+      expect(feature.featureIndex).not.toBe("");
+      expect(feature.featureId).toEqual(expect.any(String));
+      expect(feature.featureId).not.toBe("");
+      expect(feature.tile.url).toBe(
+        providerFixture.metadata.tilesetUrlTemplate
+          .replace("{z}", String(feature.tile.z))
+          .replace("{x}", String(feature.tile.x))
+          .replace("{y}", String(feature.tile.y))
+      );
+
+      featureIds.push(feature.id);
+      featureProvenance.push(
+        [
+          feature.tile.z,
+          feature.tile.x,
+          feature.tile.y,
+          feature.sourceLayer,
+          feature.featureIndex,
+          feature.featureId
+        ].join("/")
+      );
+    }
+
+    expect(new Set(featureIds).size).toBe(featureIds.length);
+    expect(new Set(featureProvenance).size).toBe(featureProvenance.length);
 
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(
@@ -1212,8 +1182,7 @@ describe("map helpers", () => {
     });
 
     for (const feature of providerFixture.features) {
-      const posterLayerId = posterLayerIdByFeatureId[feature.id];
-      const posterLayer = style.layers.find((layer) => layer.id === posterLayerId);
+      const posterLayer = style.layers.find((layer) => layer.id === feature.posterLayerId);
 
       expect(posterLayer).toBeDefined();
       if (!posterLayer || !("filter" in posterLayer) || posterLayer.filter === undefined) {
@@ -1222,12 +1191,6 @@ describe("map helpers", () => {
 
       expect(posterLayer["source-layer"]).toBe(feature.sourceLayer);
       expect(["LineString", "Point"]).toContain(feature.geometryType);
-      expect(feature.tile.url).toBe(
-        providerFixture.metadata.tilesetUrlTemplate
-          .replace("{z}", String(feature.tile.z))
-          .replace("{x}", String(feature.tile.x))
-          .replace("{y}", String(feature.tile.y))
-      );
 
       const compiledFilter = featureFilter(posterLayer.filter).filter;
 

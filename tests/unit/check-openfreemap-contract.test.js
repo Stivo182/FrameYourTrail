@@ -14,6 +14,27 @@ function readLibertyFixture() {
   );
 }
 
+function readProviderFixture() {
+  return JSON.parse(
+    readFileSync(
+      resolve(import.meta.dirname, "../fixtures/openfreemap-provider-feature-contract.json"),
+      "utf8"
+    )
+  );
+}
+
+async function createPosterStyle() {
+  const { loadMapStyle } = await import("../../src/render/map-styles.js");
+  const libertyFixture = readLibertyFixture();
+
+  return loadMapStyle("openfreemap_poster", {
+    fetcher: async () =>
+      new Response(JSON.stringify(libertyFixture), {
+        headers: { "Content-Type": "application/json" }
+      })
+  });
+}
+
 function createLiveStyle(fixture) {
   const style = structuredClone(fixture);
   delete style.metadata;
@@ -77,16 +98,28 @@ describe("OpenFreeMap live contract checker", () => {
     );
   });
 
-  it("matches provider evidence by layer, geometry type, class, subclass, and stable name", async () => {
+  it("preserves exact decoded Unicode names in the provider fixture", () => {
+    const featuresById = new Map(
+      readProviderFixture().features.map((feature) => [feature.id, feature])
+    );
+
+    expect(featuresById.get("miyajima-ropeway-label").properties.name).toBe("宮島ロープウエー");
+    expect(featuresById.get("jr-miyajima-ferry-label").properties.name).toBe("JR宮島連絡船");
+  });
+
+  it("matches every filter-relevant provider property while ignoring unrelated properties", async () => {
     const { featureMatchesContract } = await loadChecker();
     const contractFeature = {
       sourceLayer: "transportation_name",
       geometryType: "LineString",
       properties: {
-        name: "Local name that may change",
+        name: "Miyajima Ropeway base name",
         name_en: "Miyajima Ropeway",
+        "name:en": "Miyajima Ropeway",
+        "name:latin": "Miyajima Ropeway",
         class: "aerialway",
         subclass: "cable_car",
+        rank: 1,
         oneway: 1
       }
     };
@@ -94,20 +127,32 @@ describe("OpenFreeMap live contract checker", () => {
       sourceLayer: "transportation_name",
       geometryType: "LineString",
       properties: {
-        name: "Updated local name",
+        name: "Miyajima Ropeway base name",
         name_en: "Miyajima Ropeway",
+        "name:en": "Miyajima Ropeway",
+        "name:latin": "Miyajima Ropeway",
         class: "aerialway",
-        subclass: "cable_car"
+        subclass: "cable_car",
+        rank: 1,
+        oneway: 0
       }
     };
 
     expect(featureMatchesContract(contractFeature, matchingFeature)).toBe(true);
-    expect(
-      featureMatchesContract(contractFeature, {
-        ...matchingFeature,
-        properties: { ...matchingFeature.properties, name_en: "Another ropeway" }
-      })
-    ).toBe(false);
+    for (const property of [
+      "class",
+      "subclass",
+      "name",
+      "name_en",
+      "name:en",
+      "name:latin",
+      "rank"
+    ]) {
+      const candidate = structuredClone(matchingFeature);
+      delete candidate.properties[property];
+
+      expect(featureMatchesContract(contractFeature, candidate), property).toBe(false);
+    }
     expect(
       featureMatchesContract(contractFeature, {
         ...matchingFeature,
@@ -122,21 +167,64 @@ describe("OpenFreeMap live contract checker", () => {
     ).toBe(false);
   });
 
-  it("uses the local name when provider evidence has no English name", async () => {
-    const { featureMatchesContract } = await loadChecker();
-    const contractFeature = {
-      sourceLayer: "poi",
-      geometryType: "Point",
-      properties: { class: "lighthouse", name: "Cape Light" }
-    };
+  it("rejects a motorway candidate without its base name from the contract and generated filter", async () => {
+    const { featureMatchesContract, featurePassesPosterFilter } = await loadChecker();
+    const contractFeature = readProviderFixture().features.find(
+      (feature) => feature.id === "john-fitzgerald-expressway-label"
+    );
+    const candidate = structuredClone(contractFeature);
+    const posterStyle = await createPosterStyle();
 
-    expect(featureMatchesContract(contractFeature, structuredClone(contractFeature))).toBe(true);
-    expect(
-      featureMatchesContract(contractFeature, {
-        ...contractFeature,
-        properties: { class: "lighthouse", name: "Harbor Light" }
-      })
-    ).toBe(false);
+    expect(featureMatchesContract(contractFeature, candidate)).toBe(true);
+    expect(featurePassesPosterFilter(contractFeature, candidate, posterStyle)).toBe(true);
+
+    delete candidate.properties.name;
+
+    expect(featureMatchesContract(contractFeature, candidate)).toBe(false);
+    expect(featurePassesPosterFilter(contractFeature, candidate, posterStyle)).toBe(false);
+  });
+
+  it("rejects a lighthouse candidate without name:en from the contract and generated filter", async () => {
+    const { featureMatchesContract, featurePassesPosterFilter } = await loadChecker();
+    const contractFeature = readProviderFixture().features.find(
+      (feature) => feature.id === "westerheversand-lighthouse-label"
+    );
+    const candidate = structuredClone(contractFeature);
+    const posterStyle = await createPosterStyle();
+
+    expect(featureMatchesContract(contractFeature, candidate)).toBe(true);
+    expect(featurePassesPosterFilter(contractFeature, candidate, posterStyle)).toBe(true);
+
+    delete candidate.properties["name:en"];
+
+    expect(featureMatchesContract(contractFeature, candidate)).toBe(false);
+    expect(featurePassesPosterFilter(contractFeature, candidate, posterStyle)).toBe(false);
+  });
+
+  it("fails when a provider sample target poster layer is missing", async () => {
+    const { featurePassesPosterFilter } = await loadChecker();
+    const contractFeature = readProviderFixture().features[0];
+
+    expect(() =>
+      featurePassesPosterFilter(contractFeature, contractFeature, { layers: [] })
+    ).toThrow(/target poster layer .* is missing/);
+  });
+
+  it("fails when a provider sample target poster layer has no filter", async () => {
+    const { featurePassesPosterFilter } = await loadChecker();
+    const contractFeature = readProviderFixture().features[0];
+    const posterStyle = await createPosterStyle();
+    const targetLayer = posterStyle.layers.find((layer) => layer.id === "poster-aerialway-line");
+
+    if (!targetLayer || !("filter" in targetLayer)) {
+      throw new Error("Expected generated poster aerialway layer with a filter");
+    }
+
+    delete targetLayer.filter;
+
+    expect(() => featurePassesPosterFilter(contractFeature, contractFeature, posterStyle)).toThrow(
+      /target poster layer .* has no filter/
+    );
   });
 
   it("reports HTTP failures with the resource label, status, and URL", async () => {
