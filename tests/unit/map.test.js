@@ -536,26 +536,6 @@ const openFreeMapStyle = {
       }
     },
     {
-      id: "building",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "building",
-      maxzoom: 14,
-      paint: {
-        "fill-color": "#cbd5e1"
-      }
-    },
-    {
-      id: "building-3d",
-      type: "fill-extrusion",
-      source: "openmaptiles",
-      "source-layer": "building",
-      minzoom: 14,
-      paint: {
-        "fill-extrusion-color": "#cbd5e1"
-      }
-    },
-    {
       id: "road-minor",
       type: "line",
       source: "openmaptiles",
@@ -599,6 +579,26 @@ const openFreeMapStyle = {
       "source-layer": "aeroway",
       paint: {
         "line-color": "#f2b8a0"
+      }
+    },
+    {
+      id: "building",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "building",
+      maxzoom: 14,
+      paint: {
+        "fill-color": "#cbd5e1"
+      }
+    },
+    {
+      id: "building-3d",
+      type: "fill-extrusion",
+      source: "openmaptiles",
+      "source-layer": "building",
+      minzoom: 14,
+      paint: {
+        "fill-extrusion-color": "#cbd5e1"
       }
     },
     {
@@ -1078,7 +1078,8 @@ describe("map helpers", () => {
       filter: [
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["match", ["get", "class"], ["path", "track"], true, false]
+        ["match", ["get", "class"], ["path", "track"], true, false],
+        ["!", ["has", "brunnel"]]
       ],
       layout: {
         "line-cap": "round",
@@ -1148,6 +1149,156 @@ describe("map helpers", () => {
     );
     expect(layer("poster-landcover-label")).toBeUndefined();
     expect(layer("poster-landuse-label")).toBeUndefined();
+  });
+
+  it("keeps supplemental trail linework off upstream bridge and tunnel features", async () => {
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
+    });
+    const trailLayer = style.layers.find((styleLayer) => styleLayer.id === "poster-trail-line");
+
+    if (trailLayer?.type !== "line") {
+      throw new Error("Expected poster trail line layer");
+    }
+
+    const compiledTrailFilter = featureFilter(trailLayer.filter).filter;
+    const matchesTrailFeature = (properties) =>
+      compiledTrailFilter(
+        { zoom: 14 },
+        {
+          type: "LineString",
+          properties
+        }
+      );
+
+    expect(matchesTrailFeature({ class: "path" })).toBe(true);
+    expect(matchesTrailFeature({ class: "track" })).toBe(true);
+    expect(matchesTrailFeature({ class: "path", brunnel: "bridge" })).toBe(false);
+    expect(matchesTrailFeature({ class: "track", brunnel: "tunnel" })).toBe(false);
+  });
+
+  it("keeps supplemental transport and building detail in live-like geometry tiers", async () => {
+    const liveLikeStyle = cloneOpenFreeMapStyle();
+    liveLikeStyle.layers = [
+      { id: "background", type: "background" },
+      {
+        id: "water",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "water"
+      },
+      {
+        id: "road",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "transportation"
+      },
+      {
+        id: "early-icon",
+        type: "symbol",
+        source: "openmaptiles",
+        "source-layer": "transportation_name",
+        layout: { "icon-image": "road-shield" }
+      },
+      {
+        id: "bridge-path",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "transportation",
+        filter: ["==", ["get", "brunnel"], "bridge"]
+      },
+      {
+        id: "building",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "building"
+      },
+      {
+        id: "building-3d",
+        type: "fill-extrusion",
+        source: "openmaptiles",
+        "source-layer": "building"
+      },
+      {
+        id: "admin-boundary",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "boundary"
+      },
+      {
+        id: "place-label",
+        type: "symbol",
+        source: "openmaptiles",
+        "source-layer": "place",
+        layout: { "text-field": ["get", "name"] }
+      }
+    ];
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(liveLikeStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const finalLayerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+
+    expect(finalLayerIndex("early-icon")).toBeLessThan(finalLayerIndex("bridge-path"));
+    expect(finalLayerIndex("poster-trail-line")).toBe(finalLayerIndex("bridge-path") + 1);
+    expect(finalLayerIndex("poster-aerialway-line")).toBe(finalLayerIndex("poster-trail-line") + 1);
+    expect(finalLayerIndex("poster-shipway-line")).toBe(
+      finalLayerIndex("poster-aerialway-line") + 1
+    );
+    expect(finalLayerIndex("building")).toBe(finalLayerIndex("poster-shipway-line") + 1);
+    expect(finalLayerIndex("building-3d")).toBe(finalLayerIndex("building") + 1);
+    expect(finalLayerIndex("poster-building-outline")).toBe(finalLayerIndex("building-3d") + 1);
+    expect(finalLayerIndex("admin-boundary")).toBe(finalLayerIndex("poster-building-outline") + 1);
+    expect(finalLayerIndex("poster-park-label")).toBe(finalLayerIndex("admin-boundary") + 1);
+    expect(finalLayerIndex("place-label")).toBeGreaterThan(
+      finalLayerIndex("poster-lighthouse-label")
+    );
+  });
+
+  it("uses the administrative tier as the transport ceiling without building geometry", async () => {
+    const boundaryOnlyStyle = cloneOpenFreeMapStyle();
+    boundaryOnlyStyle.layers = [
+      { id: "background", type: "background" },
+      {
+        id: "road",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "transportation"
+      },
+      {
+        id: "admin-boundary",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "boundary"
+      },
+      {
+        id: "place-label",
+        type: "symbol",
+        source: "openmaptiles",
+        "source-layer": "place",
+        layout: { "text-field": ["get", "name"] }
+      }
+    ];
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(boundaryOnlyStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const finalLayerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+
+    expect(finalLayerIndex("poster-trail-line")).toBe(finalLayerIndex("road") + 1);
+    expect(finalLayerIndex("poster-building-outline")).toBe(
+      finalLayerIndex("poster-shipway-line") + 1
+    );
+    expect(finalLayerIndex("admin-boundary")).toBe(finalLayerIndex("poster-building-outline") + 1);
+    expect(finalLayerIndex("poster-park-label")).toBe(finalLayerIndex("admin-boundary") + 1);
   });
 
   it("scopes poster OpenFreeMap tourist landmark labels and reuses path labels for trail names", async () => {

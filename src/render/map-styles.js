@@ -645,14 +645,90 @@ function createSupplementalPosterLabelLayers() {
  */
 function insertSupplementalPosterDetailLayers(layers) {
   const layersWithAreas = insertSupplementalPosterAreaLayers(layers);
-  const insertionIndex = getMapTextLabelBoundaryIndex(layersWithAreas);
+  const transportInsertionIndex = getSupplementalPosterTransportInsertionIndex(layersWithAreas);
+  const layersWithTransport = [
+    ...layersWithAreas.slice(0, transportInsertionIndex),
+    ...createSupplementalPosterTransportLineLayers(),
+    ...layersWithAreas.slice(transportInsertionIndex)
+  ];
+  const buildingOutlineInsertionIndex =
+    getSupplementalPosterBuildingOutlineInsertionIndex(layersWithTransport);
+  const layersWithGeometry = [
+    ...layersWithTransport.slice(0, buildingOutlineInsertionIndex),
+    createSupplementalPosterBuildingOutlineLayer(),
+    ...layersWithTransport.slice(buildingOutlineInsertionIndex)
+  ];
+  const textLabelInsertionIndex = getMapTextLabelBoundaryIndex(layersWithGeometry);
 
   return [
-    ...layersWithAreas.slice(0, insertionIndex),
-    ...createSupplementalPosterTransportLineLayers(),
+    ...layersWithGeometry.slice(0, textLabelInsertionIndex),
     ...createSupplementalPosterLabelLayers(),
-    ...layersWithAreas.slice(insertionIndex)
+    ...layersWithGeometry.slice(textLabelInsertionIndex)
   ];
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function getSupplementalPosterTransportInsertionIndex(layers) {
+  const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(layers);
+  const geometryBarrierOffset = layers
+    .slice(0, textLabelBoundaryIndex)
+    .findIndex(
+      (layer) => isMapBuildingGeometryLayer(layer) || isMapAdministrativeBoundaryLayer(layer)
+    );
+
+  return geometryBarrierOffset === -1 ? textLabelBoundaryIndex : geometryBarrierOffset;
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function getSupplementalPosterBuildingOutlineInsertionIndex(layers) {
+  const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(layers);
+  const administrativeBoundaryOffset = layers
+    .slice(0, textLabelBoundaryIndex)
+    .findIndex(isMapAdministrativeBoundaryLayer);
+  const administrativeBoundaryIndex =
+    administrativeBoundaryOffset === -1 ? textLabelBoundaryIndex : administrativeBoundaryOffset;
+  const finalBuildingGeometryIndex = layers
+    .slice(0, administrativeBoundaryIndex)
+    .findLastIndex(isMapBuildingGeometryLayer);
+
+  return finalBuildingGeometryIndex === -1
+    ? administrativeBoundaryIndex
+    : finalBuildingGeometryIndex + 1;
+}
+
+/**
+ * @param {unknown} layer
+ */
+function isMapBuildingGeometryLayer(layer) {
+  return isMapSourceGeometryLayer(layer, "building");
+}
+
+/**
+ * @param {unknown} layer
+ */
+function isMapAdministrativeBoundaryLayer(layer) {
+  return isMapSourceGeometryLayer(layer, "boundary");
+}
+
+/**
+ * @param {unknown} layer
+ * @param {string} sourceLayer
+ */
+function isMapSourceGeometryLayer(layer, sourceLayer) {
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    return false;
+  }
+
+  const layerObject = /** @type {{ "source-layer"?: unknown }} */ (layer);
+
+  return (
+    layerObject["source-layer"] === sourceLayer &&
+    ["fill", "fill-extrusion", "line"].includes(getLayerType(layer))
+  );
 }
 
 /**
@@ -725,7 +801,8 @@ function createSupplementalPosterTransportLineLayers() {
       filter: [
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["match", ["get", "class"], ["path", "track"], true, false]
+        ["match", ["get", "class"], ["path", "track"], true, false],
+        ["!", ["has", "brunnel"]]
       ],
       layout: {
         "line-cap": "round",
@@ -779,21 +856,24 @@ function createSupplementalPosterTransportLineLayers() {
         "line-dasharray": [1, 1.8],
         "line-opacity": 0.7
       }
-    },
-    {
-      id: "poster-building-outline",
-      type: "line",
-      source: "openmaptiles",
-      "source-layer": "building",
-      minzoom: 13,
-      filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
-      paint: {
-        "line-color": POSTER_BACKGROUND_MAP_PALETTE.buildingOutline,
-        "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 14, 0.45, 16, 0.65, 20, 0.95],
-        "line-opacity": 0.9
-      }
     }
   ];
+}
+
+function createSupplementalPosterBuildingOutlineLayer() {
+  return {
+    id: "poster-building-outline",
+    type: "line",
+    source: "openmaptiles",
+    "source-layer": "building",
+    minzoom: 13,
+    filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+    paint: {
+      "line-color": POSTER_BACKGROUND_MAP_PALETTE.buildingOutline,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 14, 0.45, 16, 0.65, 20, 0.95],
+      "line-opacity": 0.9
+    }
+  };
 }
 
 /**

@@ -556,7 +556,9 @@ Map requirements:
   zoom
 - road names, named trail/path/track labels, trail/path/track linework, and
   cable lift/aerialway detail stay visually distinct within the poster palette
-  where OpenFreeMap exposes the underlying transportation data
+  where OpenFreeMap exposes the underlying transportation data; supplemental
+  surface transport detail preserves upstream bridge/tunnel hierarchy and
+  stays below buildings and administrative boundaries
 - the default OpenFreeMap style supplements named park labels from zoom 10 and
   mountain peak labels from zoom 9 when those vector tile source layers expose
   names, supplements medium-zoom river and water body labels where OpenFreeMap
