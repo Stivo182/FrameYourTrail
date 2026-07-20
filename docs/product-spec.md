@@ -564,8 +564,12 @@ Map requirements:
   named attractions, castles, museums, temples, shrines, and viewpoints, and
   supplements cable lift/aerialway and sea/ferry route names when the
   transportation name source layer exposes names; it also adds best-effort
-  lighthouse labels from named attraction or museum POIs containing `light`,
-  because OpenFreeMap tiles do not expose a reliable lighthouse class;
+  lighthouse labels from named attraction or museum POIs whose `name`,
+  `name_en`, or `name:latin` value contains `lighthouse`, `light house`, or
+  `灯台`, equals `Light`, or ends with the token ` Light`; internal or plural
+  substrings such as `Twilight`, `Red Light District`, and `Piccadilly Lights`
+  are excluded because OpenFreeMap tiles do not expose a reliable lighthouse
+  class;
   `landcover` and `landuse` are not labeled because they do not expose names
 - river, water body, sea/ferry route, and building detail stays readable where
   OpenFreeMap exposes the underlying vector data; building fills and outlines

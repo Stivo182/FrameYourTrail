@@ -181,14 +181,31 @@ const OPENFREEMAP_POINT_NAME_FILTER = Object.freeze([
 const OPENFREEMAP_LIGHTHOUSE_TERMS = Object.freeze(["lighthouse", "light house", "\u706f\u53f0"]);
 const OPENFREEMAP_LIGHTHOUSE_NAME_FILTER = Object.freeze([
   "any",
-  ...["name", "name_en", "name:latin"].flatMap((nameField) =>
-    OPENFREEMAP_LIGHTHOUSE_TERMS.map((term) => [
-      "!=",
-      ["index-of", term, ["downcase", ["coalesce", ["get", nameField], ""]]],
-      -1
-    ])
+  ...["name", "name_en", "name:latin"].map((nameField) =>
+    createOpenFreeMapLighthouseNameFilter(nameField)
   )
 ]);
+
+/**
+ * @param {string} nameField
+ */
+function createOpenFreeMapLighthouseNameFilter(nameField) {
+  return [
+    "let",
+    "normalizedName",
+    ["downcase", ["coalesce", ["get", nameField], ""]],
+    [
+      "any",
+      ...OPENFREEMAP_LIGHTHOUSE_TERMS.map((term) => [
+        "!=",
+        ["index-of", term, ["var", "normalizedName"]],
+        -1
+      ]),
+      ["==", ["var", "normalizedName"], "light"],
+      ["==", ["slice", ["var", "normalizedName"], -6], " light"]
+    ]
+  ];
+}
 
 const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
   Object.freeze({

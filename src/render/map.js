@@ -606,6 +606,19 @@ function createEndpointFeature(point, kind, label) {
 }
 
 /**
+ * @param {import("maplibre-gl").StyleSpecification["layers"]} layers
+ */
+function getFirstSymbolAfterFinalGeometryLayerId(layers) {
+  const finalGeometryLayerIndex = layers.findLastIndex((layer) => layer.type !== "symbol");
+
+  if (finalGeometryLayerIndex === -1) {
+    return undefined;
+  }
+
+  return layers.slice(finalGeometryLayerIndex + 1).find((layer) => layer.type === "symbol")?.id;
+}
+
+/**
  * @param {HTMLElement} host
  * @param {RoutePoint[]} points
  * @param {ReturnType<typeof createI18n>} [i18n]
@@ -649,7 +662,7 @@ export async function initRouteMap(
       loadMapStyle(mapStyleId)
     ]);
     throwIfRouteMapAborted(signal);
-    const firstSymbolLayerId = openFreeMapStyle.layers.find((layer) => layer.type === "symbol")?.id;
+    const routeLayerAnchorId = getFirstSymbolAfterFinalGeometryLayerId(openFreeMapStyle.layers);
 
     map = new maplibregl.Map({
       container: mapNode,
@@ -682,46 +695,52 @@ export async function initRouteMap(
         createEndpointGeoJson(points, i18n)
       )
     });
-    map.addLayer(
-      {
-        id: "route-line-halo",
-        type: "line",
-        source: "route",
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 12,
-          "line-opacity": 0.9
-        },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round"
-        }
+    const initializedMap = map;
+    /**
+     * @param {import("maplibre-gl").LineLayerSpecification} layer
+     */
+    const addRouteLineLayer = (layer) => {
+      if (routeLayerAnchorId) {
+        initializedMap.addLayer(layer, routeLayerAnchorId);
+      } else {
+        initializedMap.addLayer(layer);
+      }
+    };
+
+    addRouteLineLayer({
+      id: "route-line-halo",
+      type: "line",
+      source: "route",
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 12,
+        "line-opacity": 0.9
       },
-      firstSymbolLayerId
-    );
-    map.addLayer(
-      {
-        id: "route-line",
-        type: "line",
-        source: "route",
-        paint: {
-          ...(routeGradient
-            ? { "line-gradient": routeGradient }
-            : {
-                "line-color": hasSpeedSegments
-                  ? ["coalesce", ["get", ROUTE_COLOR_PROPERTY], ROUTE_LINE_COLOR]
-                  : ROUTE_LINE_COLOR
-              }),
-          "line-width": 7,
-          "line-opacity": 0.96
-        },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round"
-        }
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      }
+    });
+    addRouteLineLayer({
+      id: "route-line",
+      type: "line",
+      source: "route",
+      paint: {
+        ...(routeGradient
+          ? { "line-gradient": routeGradient }
+          : {
+              "line-color": hasSpeedSegments
+                ? ["coalesce", ["get", ROUTE_COLOR_PROPERTY], ROUTE_LINE_COLOR]
+                : ROUTE_LINE_COLOR
+            }),
+        "line-width": 7,
+        "line-opacity": 0.96
       },
-      firstSymbolLayerId
-    );
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      }
+    });
     map.addLayer({
       id: "route-endpoint-circles",
       type: "circle",

@@ -1,3 +1,4 @@
+import { featureFilter } from "@maplibre/maplibre-gl-style-spec";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { haversineMeters } from "../../src/core/geo.js";
 import { createI18n } from "../../src/i18n/index.js";
@@ -37,6 +38,8 @@ const maplibreMock = vi.hoisted(() => {
       sources: new globalThis.Map(),
       /** @type {any[]} */
       layers: [],
+      /** @type {any[]} */
+      styleLayers: [...options.style.layers],
       on: vi.fn((event, handler) => {
         if (event === "error") {
           instance.errorListeners.push(handler);
@@ -62,8 +65,23 @@ const maplibreMock = vi.hoisted(() => {
       addSource: vi.fn((id, source) => {
         instance.sources.set(id, source);
       }),
-      addLayer: vi.fn((layer) => {
+      addLayer: vi.fn((layer, beforeId) => {
         instance.layers.push(layer);
+
+        if (beforeId === undefined) {
+          instance.styleLayers.push(layer);
+          return;
+        }
+
+        const insertionIndex = instance.styleLayers.findIndex(
+          (styleLayer) => styleLayer.id === beforeId
+        );
+
+        if (insertionIndex === -1) {
+          throw new Error(`Unknown beforeId: ${beforeId}`);
+        }
+
+        instance.styleLayers.splice(insertionIndex, 0, layer);
       }),
       fitBounds: vi.fn(() => {
         currentZoom = fitBoundsZoom;
@@ -1154,15 +1172,7 @@ describe("map helpers", () => {
       "text-halo-color": "#fbfaf3",
       "text-halo-width": 1
     };
-    const lighthouseTerms = ["lighthouse", "light house", "\u706f\u53f0"];
-    const lighthouseNameFields = ["name", "name_en", "name:latin"];
-    const lighthouseNameMatchers = lighthouseNameFields.flatMap((nameField) =>
-      lighthouseTerms.map((term) => [
-        "!=",
-        ["index-of", term, ["downcase", ["coalesce", ["get", nameField], ""]]],
-        -1
-      ])
-    );
+    const lighthouseLabelLayer = layer("poster-lighthouse-label");
 
     expect(layer("poster-shipway-line")).toMatchObject({
       id: "poster-shipway-line",
@@ -1202,19 +1212,13 @@ describe("map helpers", () => {
       paint: posterLabelPaint
     });
 
-    expect(layer("poster-lighthouse-label")).toMatchObject({
+    expect(lighthouseLabelLayer).toMatchObject({
       id: "poster-lighthouse-label",
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "poi",
       minzoom: 12,
-      filter: [
-        "all",
-        ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
-        ["has", "name"],
-        ["match", ["get", "class"], ["attraction", "museum"], true, false],
-        ["any", ...lighthouseNameMatchers]
-      ],
+      filter: expect.any(Array),
       layout: expect.objectContaining({
         "symbol-placement": "point",
         "text-field": openFreeMapNameTextField,
@@ -1222,13 +1226,43 @@ describe("map helpers", () => {
       }),
       paint: posterLabelPaint
     });
-    const matchesExplicitLighthouseTerm = (name) =>
-      lighthouseTerms.some((term) => name.toLowerCase().includes(term));
+    if (lighthouseLabelLayer?.type !== "symbol") {
+      throw new Error("Expected poster lighthouse label symbol layer");
+    }
 
-    expect(["Red Light District", "Twilight"].some(matchesExplicitLighthouseTerm)).toBe(false);
-    expect(
-      ["Lighthouse", "Cape Light House", "\u706f\u53f0"].every(matchesExplicitLighthouseTerm)
-    ).toBe(true);
+    const compiledLighthouseFilter = featureFilter(lighthouseLabelLayer.filter).filter;
+    const matchesLighthouseFeature = (properties) =>
+      compiledLighthouseFilter(
+        { zoom: 12 },
+        {
+          type: "Point",
+          properties
+        }
+      );
+    const acceptedLighthouseProperties = [
+      { class: "attraction", name: "Harbor Lighthouse" },
+      { class: "museum", name: "Old Light House" },
+      { class: "attraction", name: "Light" },
+      { class: "attraction", name: "Boston Light" },
+      { class: "attraction", name: "Cape Light" },
+      { class: "attraction", name: "Cape \u706f\u53f0" },
+      { class: "attraction", name: "Beacon", name_en: "Boston Light" },
+      { class: "museum", name: "Beacon", "name:latin": "Harbor Lighthouse" }
+    ];
+    const rejectedLighthouseProperties = [
+      { class: "attraction", name: "Red Light District" },
+      { class: "museum", name: "Piccadilly Lights" },
+      { class: "attraction", name: "Twilight" },
+      { class: "attraction", name: "Starlight" },
+      { class: "restaurant", name: "Cape Light" }
+    ];
+
+    expect(acceptedLighthouseProperties.map(matchesLighthouseFeature)).toEqual(
+      acceptedLighthouseProperties.map(() => true)
+    );
+    expect(rejectedLighthouseProperties.map(matchesLighthouseFeature)).toEqual(
+      rejectedLighthouseProperties.map(() => false)
+    );
     expect(layerIndex("poster-lighthouse-label")).toBeGreaterThan(
       layerIndex("poster-shipway-label")
     );
@@ -1893,6 +1927,19 @@ describe("map helpers", () => {
         source: "cyclosm-raster"
       }
     ]);
+    const map = maplibreMock.instances[0];
+    const routeLayerCalls = map.addLayer.mock.calls.filter(([layer]) =>
+      ["route-line-halo", "route-line"].includes(layer.id)
+    );
+
+    expect(map.styleLayers.map((layer) => layer.id)).toEqual([
+      "cyclosm-raster",
+      "route-line-halo",
+      "route-line",
+      "route-endpoint-circles",
+      "route-endpoint-labels"
+    ]);
+    expect(routeLayerCalls.map((call) => call.length)).toEqual([1, 1]);
   });
 
   it("continues when a map style is already loaded before subscribing to load", async () => {
@@ -2036,18 +2083,34 @@ describe("map helpers", () => {
       "route-endpoint-circles",
       "route-endpoint-labels"
     ]);
-    const firstSymbolLayerId = mapStyle.layers.find((layer) => layer.type === "symbol")?.id;
-    const addLayerBeforeIds = Object.fromEntries(
-      map.addLayer.mock.calls.map(([layer, ...beforeIds]) => [layer.id, beforeIds])
-    );
+    const finalStyleLayerIds = map.styleLayers.map((layer) => layer.id);
+    const finalLayerIndex = (id) => finalStyleLayerIds.indexOf(id);
 
-    expect(firstSymbolLayerId).toBe("highway-shield");
-    expect(addLayerBeforeIds).toEqual({
-      "route-line-halo": [firstSymbolLayerId],
-      "route-line": [firstSymbolLayerId],
-      "route-endpoint-circles": [],
-      "route-endpoint-labels": []
-    });
+    expect(finalLayerIndex("highway-shield")).toBeLessThan(
+      finalLayerIndex("poster-building-outline")
+    );
+    expect(finalStyleLayerIds.slice(finalLayerIndex("poster-building-outline"), -2)).toEqual([
+      "poster-building-outline",
+      "route-line-halo",
+      "route-line",
+      "poster-park-label",
+      "poster-mountain-peak-label",
+      "poster-waterway-label",
+      "poster-water-name-line-label",
+      "poster-water-name-point-label",
+      "poster-tourist-poi-label",
+      "poster-aerialway-label",
+      "poster-shipway-label",
+      "poster-lighthouse-label",
+      "place-label",
+      "highway-name-major",
+      "highway-name-minor",
+      "highway-name-path"
+    ]);
+    expect(finalStyleLayerIds.slice(-2)).toEqual([
+      "route-endpoint-circles",
+      "route-endpoint-labels"
+    ]);
     const routeLayer = map.layers.find((layer) => layer.id === "route-line");
     expect(routeLayer.paint["line-gradient"]).toEqual(
       createRouteSpeedGradient(mapSpeedSeries, routeDistance)
