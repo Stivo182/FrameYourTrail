@@ -282,6 +282,31 @@ const EXPECTED_LANDUSE_AREA_GROUPS = [
   }
 ];
 
+const OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT = [
+  "case",
+  ["has", "name:nonlatin"],
+  ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
+  ["coalesce", ["get", "name_en"], ["get", "name:en"], ["get", "name"], ["get", "name:latin"]]
+];
+
+const POSTER_LABEL_PAINT_CONTRACT = {
+  "text-color": "#5f6c61",
+  "text-halo-color": "#fbfaf3",
+  "text-halo-width": 1
+};
+
+const POSTER_WATER_LABEL_PAINT_CONTRACT = {
+  "text-color": "#416b73",
+  "text-halo-color": "#fbfaf3",
+  "text-halo-width": 1
+};
+
+const POSTER_TRAIL_LABEL_PAINT_CONTRACT = {
+  "text-color": "#8f8b63",
+  "text-halo-color": "#fbfaf3",
+  "text-halo-width": 1
+};
+
 const openFreeMapStyle = {
   version: 8,
   sources: {
@@ -966,6 +991,7 @@ describe("map helpers", () => {
       "poster-water-name-line-label",
       "poster-water-name-point-label",
       "poster-tourist-poi-label",
+      "poster-highway-name-motorway",
       "poster-aerialway-label",
       "poster-shipway-label",
       "poster-lighthouse-label"
@@ -1092,29 +1118,89 @@ describe("map helpers", () => {
     ).toBe(false);
   });
 
-  it("matches captured provider features with generated transport filters", async () => {
+  it("matches captured provider features with generated supplemental filters", async () => {
     const libertyFixture = readOpenFreeMapLibertyContractFixture();
     const providerFixture = readOpenFreeMapProviderFeatureContractFixture();
     const posterLayerIdByFeatureId = {
       "miyajima-ropeway-line": "poster-aerialway-line",
       "miyajima-ropeway-label": "poster-aerialway-label",
       "jr-miyajima-ferry-line": "poster-shipway-line",
-      "jr-miyajima-ferry-label": "poster-shipway-label"
+      "jr-miyajima-ferry-label": "poster-shipway-label",
+      "john-fitzgerald-expressway-label": "poster-highway-name-motorway",
+      "westerheversand-lighthouse-label": "poster-lighthouse-label"
     };
-
     expect(providerFixture.metadata).toEqual({
       tilesetUrlTemplate: "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
       capturedOn: "2026-07-20",
       decoder: "@mapbox/vector-tile 2.0.4",
       curatedScope:
-        "Decoded representative aerialway and ferry line and name features for poster provider extension contracts"
+        "Decoded representative aerialway, ferry, motorway name, and lighthouse POI features for poster provider extension contracts"
     });
     expect(providerFixture.features.map((feature) => feature.id)).toEqual([
       "miyajima-ropeway-line",
       "miyajima-ropeway-label",
       "jr-miyajima-ferry-line",
-      "jr-miyajima-ferry-label"
+      "jr-miyajima-ferry-label",
+      "john-fitzgerald-expressway-label",
+      "westerheversand-lighthouse-label"
     ]);
+    const featureProvenance = providerFixture.features.map((feature) => ({
+      tile: `${feature.tile.z}/${feature.tile.x}/${feature.tile.y}`,
+      layer: feature.sourceLayer,
+      featureIndex: feature.featureIndex,
+      featureId: feature.featureId
+    }));
+
+    expect(featureProvenance).toEqual([
+      {
+        tile: "14/14214/6528",
+        layer: "transportation",
+        featureIndex: "27",
+        featureId: "416666932"
+      },
+      {
+        tile: "14/14214/6528",
+        layer: "transportation_name",
+        featureIndex: "4",
+        featureId: "416666930"
+      },
+      {
+        tile: "14/14213/6528",
+        layer: "transportation",
+        featureIndex: "6",
+        featureId: "419619980"
+      },
+      {
+        tile: "14/14213/6528",
+        layer: "transportation_name",
+        featureIndex: "0",
+        featureId: "419619982"
+      },
+      {
+        tile: "14/4957/6059",
+        layer: "transportation_name",
+        featureIndex: "10",
+        featureId: "489820340"
+      },
+      {
+        tile: "14/8585/5231",
+        layer: "poi",
+        featureIndex: "0",
+        featureId: "875341692"
+      }
+    ]);
+    expect(
+      featureProvenance.every((provenance) =>
+        Object.values(provenance).every((value) => value !== "")
+      )
+    ).toBe(true);
+    expect(
+      new Set(
+        featureProvenance.map(({ tile, layer, featureIndex, featureId }) =>
+          [tile, layer, featureIndex, featureId].join("/")
+        )
+      ).size
+    ).toBe(featureProvenance.length);
 
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(
@@ -1135,7 +1221,7 @@ describe("map helpers", () => {
       }
 
       expect(posterLayer["source-layer"]).toBe(feature.sourceLayer);
-      expect(feature.geometryType).toBe("LineString");
+      expect(["LineString", "Point"]).toContain(feature.geometryType);
       expect(feature.tile.url).toBe(
         providerFixture.metadata.tilesetUrlTemplate
           .replace("{z}", String(feature.tile.z))
@@ -1210,17 +1296,6 @@ describe("map helpers", () => {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
-    const openFreeMapNameTextField = [
-      "case",
-      ["has", "name:nonlatin"],
-      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-      ["coalesce", ["get", "name_en"], ["get", "name"]]
-    ];
-    const posterLabelPaint = {
-      "text-color": "#5f6c61",
-      "text-halo-color": "#fbfaf3",
-      "text-halo-width": 1
-    };
     const parkLabel = layer("poster-park-label");
     const mountainPeakLabel = layer("poster-mountain-peak-label");
 
@@ -1232,10 +1307,10 @@ describe("map helpers", () => {
       minzoom: 10,
       filter: ["has", "name"],
       layout: expect.objectContaining({
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-size": 11
       }),
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
     expect(mountainPeakLabel).toMatchObject({
       id: "poster-mountain-peak-label",
@@ -1245,10 +1320,10 @@ describe("map helpers", () => {
       minzoom: 9,
       filter: ["has", "name"],
       layout: expect.objectContaining({
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-size": 10
       }),
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
     expect(layer("poster-landcover-label")).toBeUndefined();
     expect(layer("poster-landuse-label")).toBeUndefined();
@@ -1259,17 +1334,6 @@ describe("map helpers", () => {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
-    const openFreeMapNameTextField = [
-      "case",
-      ["has", "name:nonlatin"],
-      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-      ["coalesce", ["get", "name_en"], ["get", "name"]]
-    ];
-    const posterWaterLabelPaint = {
-      "text-color": "#416b73",
-      "text-halo-color": "#fbfaf3",
-      "text-halo-width": 1
-    };
 
     expect(layer("poster-waterway-label")).toMatchObject({
       id: "poster-waterway-label",
@@ -1286,12 +1350,12 @@ describe("map helpers", () => {
       layout: expect.objectContaining({
         "symbol-placement": "line",
         "symbol-spacing": 60,
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-font": ["Noto Sans Regular"],
         "text-max-width": 8,
         "text-size": ["interpolate", ["linear"], ["zoom"], 9, 8, 12, 9.5, 13, 10]
       }),
-      paint: posterWaterLabelPaint
+      paint: POSTER_WATER_LABEL_PAINT_CONTRACT
     });
     expect(layer("poster-water-name-line-label")).toMatchObject({
       id: "poster-water-name-line-label",
@@ -1308,12 +1372,12 @@ describe("map helpers", () => {
       layout: expect.objectContaining({
         "symbol-placement": "line",
         "symbol-spacing": 180,
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-font": ["Noto Sans Regular"],
         "text-max-width": 8,
         "text-size": ["interpolate", ["linear"], ["zoom"], 7, 9, 10, 10, 13, 11]
       }),
-      paint: posterWaterLabelPaint
+      paint: POSTER_WATER_LABEL_PAINT_CONTRACT
     });
     expect(layer("poster-water-name-point-label")).toMatchObject({
       id: "poster-water-name-point-label",
@@ -1329,12 +1393,12 @@ describe("map helpers", () => {
       ],
       layout: expect.objectContaining({
         "symbol-placement": "point",
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-font": ["Noto Sans Regular"],
         "text-max-width": 8,
         "text-size": ["interpolate", ["linear"], ["zoom"], 7, 9, 10, 10, 13, 11]
       }),
-      paint: posterWaterLabelPaint
+      paint: POSTER_WATER_LABEL_PAINT_CONTRACT
     });
   });
 
@@ -1363,6 +1427,7 @@ describe("map helpers", () => {
       "poster-water-name-line-label",
       "poster-water-name-point-label",
       "poster-tourist-poi-label",
+      "poster-highway-name-motorway",
       "poster-aerialway-label",
       "poster-shipway-label",
       "poster-lighthouse-label"
@@ -1387,28 +1452,70 @@ describe("map helpers", () => {
     }
   });
 
-  it("adds poster OpenFreeMap trail and aerialway transport detail without duplicating road labels", async () => {
+  it("normalizes interleaved native text labels into one stable high-priority tier", async () => {
+    const interleavedStyle = cloneOpenFreeMapStyle();
+    const nativeTextLayers = interleavedStyle.layers.filter(
+      (styleLayer) =>
+        styleLayer.type === "symbol" &&
+        styleLayer.layout &&
+        Object.hasOwn(styleLayer.layout, "text-field")
+    );
+    const nonTextLayers = interleavedStyle.layers.filter(
+      (styleLayer) => !nativeTextLayers.includes(styleLayer)
+    );
+    const onewayArrowIndex = nonTextLayers.findIndex(
+      (styleLayer) => styleLayer.id === "oneway-arrow"
+    );
+
+    interleavedStyle.layers = [
+      ...nonTextLayers.slice(0, onewayArrowIndex),
+      nativeTextLayers[0],
+      nonTextLayers[onewayArrowIndex],
+      nativeTextLayers[1],
+      ...nonTextLayers.slice(onewayArrowIndex + 1),
+      ...nativeTextLayers.slice(2)
+    ];
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(interleavedStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const finalLayerIds = style.layers.map((styleLayer) => styleLayer.id);
+    const nativeTextLabelIds = nativeTextLayers.map((styleLayer) => styleLayer.id);
+    const supplementalLabelIds = style.layers
+      .filter((styleLayer) => styleLayer.type === "symbol" && styleLayer.id.startsWith("poster-"))
+      .map((styleLayer) => styleLayer.id);
+    const finalNonSymbolIndex = style.layers.findLastIndex(
+      (styleLayer) => styleLayer.type !== "symbol"
+    );
+    const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(style.layers);
+
+    expect(validateStyleMin(style)).toEqual([]);
+    expect(finalLayerIds.filter((id) => nativeTextLabelIds.includes(id))).toEqual(
+      nativeTextLabelIds
+    );
+    expect(finalLayerIds.filter((id) => nonTextLayers.some((layer) => layer.id === id))).toEqual(
+      nonTextLayers.map((layer) => layer.id)
+    );
+    expect(Math.min(...nativeTextLabelIds.map((id) => finalLayerIds.indexOf(id)))).toBeGreaterThan(
+      finalNonSymbolIndex
+    );
+    expect(Math.max(...supplementalLabelIds.map((id) => finalLayerIds.indexOf(id)))).toBeLessThan(
+      Math.min(...nativeTextLabelIds.map((id) => finalLayerIds.indexOf(id)))
+    );
+    expect(style.layers[textLabelBoundaryIndex]?.id).toBe(supplementalLabelIds[0]);
+  });
+
+  it("adds poster OpenFreeMap trail, aerialway, and motorway name detail without duplicating other road labels", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
-    const openFreeMapNameTextField = [
-      "case",
-      ["has", "name:nonlatin"],
-      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-      ["coalesce", ["get", "name_en"], ["get", "name"]]
-    ];
-    const posterLabelPaint = {
-      "text-color": "#5f6c61",
-      "text-halo-color": "#fbfaf3",
-      "text-halo-width": 1
-    };
-    const posterTrailLabelPaint = {
-      "text-color": "#8f8b63",
-      "text-halo-color": "#fbfaf3",
-      "text-halo-width": 1
-    };
 
     expect(layer("poster-trail-line")).toMatchObject({
       id: "poster-trail-line",
@@ -1466,27 +1573,49 @@ describe("map helpers", () => {
       filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]],
       layout: expect.objectContaining({
         "symbol-placement": "line",
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-size": 10
       }),
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
+    });
+
+    expect(layer("poster-highway-name-motorway")).toMatchObject({
+      id: "poster-highway-name-motorway",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "transportation_name",
+      minzoom: 10,
+      filter: [
+        "all",
+        ["has", "name"],
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+        ["==", ["get", "class"], "motorway"]
+      ],
+      layout: expect.objectContaining({
+        "symbol-placement": "line",
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
+        "text-size": 11
+      }),
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
 
     expect(layer("highway-name-major")).toMatchObject({
       minzoom: 10,
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
     expect(layer("highway-name-minor")).toMatchObject({
       minzoom: 11,
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
     expect(layer("highway-name-path")).toMatchObject({
       minzoom: 12,
-      paint: posterTrailLabelPaint
+      paint: POSTER_TRAIL_LABEL_PAINT_CONTRACT
     });
-    expect(style.layers.filter((styleLayer) => /^poster-highway-name/.test(styleLayer.id))).toEqual(
-      []
-    );
+    expect(
+      style.layers
+        .filter((styleLayer) => /^poster-highway-name/.test(styleLayer.id))
+        .map((styleLayer) => styleLayer.id)
+    ).toEqual(["poster-highway-name-motorway"]);
     expect(layer("poster-landcover-label")).toBeUndefined();
     expect(layer("poster-landuse-label")).toBeUndefined();
   });
@@ -1619,12 +1748,6 @@ describe("map helpers", () => {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
-    const openFreeMapNameTextField = [
-      "case",
-      ["has", "name:nonlatin"],
-      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-      ["coalesce", ["get", "name_en"], ["get", "name"]]
-    ];
 
     expect(layer("poster-trail-label")).toBeUndefined();
     expect(layer("highway-name-path")).toMatchObject({
@@ -1672,7 +1795,7 @@ describe("map helpers", () => {
       ],
       layout: expect.objectContaining({
         "symbol-placement": "point",
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-font": ["Noto Sans Regular"],
         "text-max-width": 8,
         "text-size": 9
@@ -1691,17 +1814,6 @@ describe("map helpers", () => {
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
-    const openFreeMapNameTextField = [
-      "case",
-      ["has", "name:nonlatin"],
-      ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-      ["coalesce", ["get", "name_en"], ["get", "name"]]
-    ];
-    const posterLabelPaint = {
-      "text-color": "#5f6c61",
-      "text-halo-color": "#fbfaf3",
-      "text-halo-width": 1
-    };
     const lighthouseLabelLayer = layer("poster-lighthouse-label");
 
     expect(layer("poster-shipway-line")).toMatchObject({
@@ -1736,10 +1848,10 @@ describe("map helpers", () => {
       filter: ["all", ["has", "name"], ["==", ["get", "class"], "ferry"]],
       layout: expect.objectContaining({
         "symbol-placement": "line",
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-size": 10
       }),
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
 
     expect(lighthouseLabelLayer).toMatchObject({
@@ -1751,10 +1863,10 @@ describe("map helpers", () => {
       filter: expect.any(Array),
       layout: expect.objectContaining({
         "symbol-placement": "point",
-        "text-field": openFreeMapNameTextField,
+        "text-field": OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT,
         "text-size": 9
       }),
-      paint: posterLabelPaint
+      paint: POSTER_LABEL_PAINT_CONTRACT
     });
     if (lighthouseLabelLayer?.type !== "symbol") {
       throw new Error("Expected poster lighthouse label symbol layer");
@@ -1776,8 +1888,9 @@ describe("map helpers", () => {
       { class: "attraction", name: "Boston Light" },
       { class: "attraction", name: "Cape Light" },
       { class: "attraction", name: "Cape \u706f\u53f0" },
-      { class: "attraction", name: "Beacon", name_en: "Boston Light" },
-      { class: "museum", name: "Beacon", "name:latin": "Harbor Lighthouse" }
+      { class: "attraction", name_en: "Boston Light" },
+      { class: "museum", "name:latin": "Harbor Lighthouse" },
+      { class: "attraction", "name:en": "Westerheversand Lighthouse" }
     ];
     const rejectedLighthouseProperties = [
       { class: "attraction", name: "Red Light District" },
@@ -3060,6 +3173,7 @@ describe("map helpers", () => {
       "poster-water-name-line-label",
       "poster-water-name-point-label",
       "poster-tourist-poi-label",
+      "poster-highway-name-motorway",
       "poster-aerialway-label",
       "poster-shipway-label",
       "poster-lighthouse-label",

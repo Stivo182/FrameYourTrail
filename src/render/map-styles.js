@@ -148,11 +148,23 @@ const SUPPLEMENTAL_POSTER_AREA_BARRIER_SOURCE_LAYERS = new Set([
   "building"
 ]);
 
+const OPENFREEMAP_SUPPORTED_NAME_FIELDS = Object.freeze([
+  "name_en",
+  "name:en",
+  "name",
+  "name:latin"
+]);
+
+const OPENFREEMAP_HAS_SUPPORTED_NAME_FILTER = Object.freeze([
+  "any",
+  ...OPENFREEMAP_SUPPORTED_NAME_FIELDS.map((nameField) => ["has", nameField])
+]);
+
 const OPENFREEMAP_NAME_TEXT_FIELD = Object.freeze([
   "case",
   ["has", "name:nonlatin"],
   ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
-  ["coalesce", ["get", "name_en"], ["get", "name"]]
+  ["coalesce", ...OPENFREEMAP_SUPPORTED_NAME_FIELDS.map((nameField) => ["get", nameField])]
 ]);
 
 const SUPPLEMENTAL_POSTER_LABEL_PAINT = Object.freeze({
@@ -182,7 +194,7 @@ const OPENFREEMAP_POINT_NAME_FILTER = Object.freeze([
 const OPENFREEMAP_LIGHTHOUSE_TERMS = Object.freeze(["lighthouse", "light house", "\u706f\u53f0"]);
 const OPENFREEMAP_LIGHTHOUSE_NAME_FILTER = Object.freeze([
   "any",
-  ...["name", "name_en", "name:latin"].map((nameField) =>
+  ...OPENFREEMAP_SUPPORTED_NAME_FIELDS.map((nameField) =>
     createOpenFreeMapLighthouseNameFilter(nameField)
   )
 ]);
@@ -292,6 +304,21 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
     }
   }),
   Object.freeze({
+    id: "poster-highway-name-motorway",
+    sourceLayer: "transportation_name",
+    minzoom: 10,
+    textSize: 11,
+    filter: [
+      "all",
+      ["has", "name"],
+      ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+      ["==", ["get", "class"], "motorway"]
+    ],
+    layout: {
+      "symbol-placement": "line"
+    }
+  }),
+  Object.freeze({
     id: "poster-aerialway-label",
     sourceLayer: "transportation_name",
     textSize: 10,
@@ -317,7 +344,7 @@ const SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS = Object.freeze([
     filter: [
       "all",
       ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
-      ["has", "name"],
+      OPENFREEMAP_HAS_SUPPORTED_NAME_FILTER,
       ["match", ["get", "class"], ["attraction", "museum"], true, false],
       OPENFREEMAP_LIGHTHOUSE_NAME_FILTER
     ],
@@ -601,10 +628,14 @@ function applyPosterBackgroundMapPalette(style) {
 
   const resolveSupplementalVectorSource = createSupplementalVectorSourceResolver(styleObject);
   const posterLayers = styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers);
+  const normalizedPosterLayers = normalizeMapTextLabelTier(posterLayers);
 
   return {
     ...styleObject,
-    layers: insertSupplementalPosterDetailLayers(posterLayers, resolveSupplementalVectorSource)
+    layers: insertSupplementalPosterDetailLayers(
+      normalizedPosterLayers,
+      resolveSupplementalVectorSource
+    )
   };
 }
 
@@ -1230,6 +1261,22 @@ export function getMapTextLabelBoundaryIndex(layers) {
   const textLabelOffset = layers.slice(searchStartIndex).findIndex(isMapTextLabelLayer);
 
   return textLabelOffset === -1 ? layers.length : searchStartIndex + textLabelOffset;
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function normalizeMapTextLabelTier(layers) {
+  const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(layers);
+
+  if (!layers.slice(0, textLabelBoundaryIndex).some(isMapTextLabelLayer)) {
+    return layers;
+  }
+
+  return [
+    ...layers.filter((layer) => !isMapTextLabelLayer(layer)),
+    ...layers.filter(isMapTextLabelLayer)
+  ];
 }
 
 /**

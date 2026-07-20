@@ -566,14 +566,15 @@ Map requirements:
   names, supplements medium-zoom river and water body labels where OpenFreeMap
   exposes named waterway or water-name features, supplements detailed-zoom
   tourist landmark labels for named attractions, castles, museums, temples,
-  shrines, and viewpoints, and supplements cable lift/aerialway and sea/ferry
-  route names when the transportation name source layer exposes names; the
-  `transportation_name` values `class=aerialway` and `class=ferry` are current
-  OpenFreeMap Planetiler provider extensions used on a best-effort basis, not a
-  guarantee of the generic OpenMapTiles schema; it also adds best-effort
-  lighthouse labels from named attraction or museum POIs whose `name`,
-  `name_en`, or `name:latin` value contains `lighthouse`, `light house`, or
-  `灯台`, equals `Light`, or ends with the token ` Light`; internal or plural
+  shrines, and viewpoints, and supplements motorway road names, cable
+  lift/aerialway names, and sea/ferry route names when the transportation name
+  source layer exposes them; the `transportation_name` values `class=motorway`,
+  `class=aerialway`, and `class=ferry` are current OpenFreeMap Planetiler
+  provider extensions used on a best-effort basis, not a guarantee of the
+  generic OpenMapTiles schema; it also adds best-effort lighthouse labels from
+  attraction or museum POIs when any of `name`, `name_en`, `name:en`, or
+  `name:latin` contains `lighthouse`, `light house`, or `灯台`, equals `Light`,
+  or ends with the token ` Light`; internal or plural
   substrings such as `Twilight`, `Red Light District`, and `Piccadilly Lights`
   are excluded because OpenFreeMap tiles do not expose a reliable lighthouse
   class;
