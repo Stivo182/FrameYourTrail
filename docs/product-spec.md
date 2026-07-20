@@ -567,8 +567,10 @@ Map requirements:
   exposes named waterway or water-name features, supplements detailed-zoom
   tourist landmark labels for named attractions, castles, museums, temples,
   shrines, and viewpoints, and supplements cable lift/aerialway and sea/ferry
-  route names when the transportation name source layer exposes names; it also
-  adds best-effort
+  route names when the transportation name source layer exposes names; the
+  `transportation_name` values `class=aerialway` and `class=ferry` are current
+  OpenFreeMap Planetiler provider extensions used on a best-effort basis, not a
+  guarantee of the generic OpenMapTiles schema; it also adds best-effort
   lighthouse labels from named attraction or museum POIs whose `name`,
   `name_en`, or `name:latin` value contains `lighthouse`, `light house`, or
   `灯台`, equals `Light`, or ends with the token ` Light`; internal or plural

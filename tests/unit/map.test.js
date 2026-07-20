@@ -1,4 +1,6 @@
 import { featureFilter, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { haversineMeters } from "../../src/core/geo.js";
 import { createI18n } from "../../src/i18n/index.js";
@@ -142,6 +144,15 @@ const points = [
   { latitude: 43.1, longitude: 42.1, elevation: 620 },
   { latitude: 43.2, longitude: 42.2, elevation: 740 }
 ];
+
+function readOpenFreeMapLibertyContractFixture() {
+  return JSON.parse(
+    readFileSync(
+      resolve(import.meta.dirname, "../fixtures/openfreemap-liberty-contract.json"),
+      "utf8"
+    )
+  );
+}
 
 const speedSeries = [
   {
@@ -903,13 +914,23 @@ describe("map helpers", () => {
     }
   });
 
-  it("resolves every supplemental vector layer from a mechanically renamed source", async () => {
-    const renamedStyle = cloneOpenFreeMapStyle();
-    renamedStyle.sources.posterTiles = renamedStyle.sources.openmaptiles;
+  it("preserves the captured Liberty provider contract with a renamed vector source", async () => {
+    const fixture = readOpenFreeMapLibertyContractFixture();
+
+    expect(validateStyleMin(fixture)).toEqual([]);
+    expect(fixture.metadata).toMatchObject({
+      capturedFrom: "https://tiles.openfreemap.org/styles/liberty",
+      capturedOn: "2026-07-20"
+    });
+
+    const renamedStyle = JSON.parse(JSON.stringify(fixture));
+    renamedStyle.sources["contract-liberty-vector"] = renamedStyle.sources.openmaptiles;
     delete renamedStyle.sources.openmaptiles;
     renamedStyle.layers = renamedStyle.layers.map((layer) =>
-      layer.source === "openmaptiles" ? { ...layer, source: "posterTiles" } : layer
+      layer.source === "openmaptiles" ? { ...layer, source: "contract-liberty-vector" } : layer
     );
+
+    expect(validateStyleMin(renamedStyle)).toEqual([]);
 
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(
@@ -926,12 +947,82 @@ describe("map helpers", () => {
         ? [layer.source]
         : []
     );
+    const retainedLayerIds = renamedStyle.layers.map((layer) => layer.id);
+    const retainedLayerIdSet = new Set(retainedLayerIds);
+    const finalLayerIndex = (id) => style.layers.findIndex((layer) => layer.id === id);
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const nativeTextLabelIds = renamedStyle.layers
+      .filter(
+        (styleLayer) =>
+          styleLayer.type === "symbol" &&
+          styleLayer.layout &&
+          Object.hasOwn(styleLayer.layout, "text-field")
+      )
+      .map((styleLayer) => styleLayer.id);
+    const supplementalTextLabelIds = style.layers
+      .filter(
+        (styleLayer) =>
+          styleLayer.id.startsWith("poster-") &&
+          styleLayer.type === "symbol" &&
+          styleLayer.layout &&
+          Object.hasOwn(styleLayer.layout, "text-field")
+      )
+      .map((styleLayer) => styleLayer.id);
 
     expect(supplementalVectorSources.length).toBeGreaterThan(0);
-    expect(new Set(supplementalVectorSources)).toEqual(new Set(["posterTiles"]));
+    expect(new Set(supplementalVectorSources)).toEqual(new Set(["contract-liberty-vector"]));
+    expect(style.sources).not.toHaveProperty("openmaptiles");
     expect(style.layers.some((layer) => "source" in layer && layer.source === "openmaptiles")).toBe(
       false
     );
+    expect(
+      style.layers.filter((layer) => retainedLayerIdSet.has(layer.id)).map((layer) => layer.id)
+    ).toEqual(retainedLayerIds);
+
+    expect(finalLayerIndex("road_one_way_arrow")).toBeLessThan(
+      finalLayerIndex("bridge_path_pedestrian")
+    );
+    expect(finalLayerIndex("bridge_path_pedestrian")).toBeLessThan(
+      finalLayerIndex("poster-trail-line")
+    );
+    expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("building"));
+    expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("boundary_2"));
+    expect(finalLayerIndex("poster-building-outline")).toBeGreaterThan(
+      finalLayerIndex("building-3d")
+    );
+    expect(finalLayerIndex("poster-building-outline")).toBeLessThan(finalLayerIndex("boundary_2"));
+    expect(Math.max(...supplementalTextLabelIds.map(finalLayerIndex))).toBeLessThan(
+      Math.min(...nativeTextLabelIds.map(finalLayerIndex))
+    );
+
+    expect(layer("poster-aerialway-line")).toMatchObject({
+      source: "contract-liberty-vector",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+        ["==", ["get", "class"], "aerialway"]
+      ]
+    });
+    expect(layer("poster-shipway-line")).toMatchObject({
+      source: "contract-liberty-vector",
+      "source-layer": "transportation",
+      filter: [
+        "all",
+        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
+        ["==", ["get", "class"], "ferry"]
+      ]
+    });
+    expect(layer("poster-aerialway-label")).toMatchObject({
+      source: "contract-liberty-vector",
+      "source-layer": "transportation_name",
+      filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]]
+    });
+    expect(layer("poster-shipway-label")).toMatchObject({
+      source: "contract-liberty-vector",
+      "source-layer": "transportation_name",
+      filter: ["all", ["has", "name"], ["==", ["get", "class"], "ferry"]]
+    });
     expect(validateStyleMin(style)).toEqual([]);
   });
 
@@ -1294,88 +1385,6 @@ describe("map helpers", () => {
     expect(matchesTrailFeature({ class: "path", brunnel: "ford" })).toBe(true);
     expect(matchesTrailFeature({ class: "path", brunnel: "bridge" })).toBe(false);
     expect(matchesTrailFeature({ class: "track", brunnel: "tunnel" })).toBe(false);
-  });
-
-  it("keeps supplemental transport and building detail in live-like geometry tiers", async () => {
-    const liveLikeStyle = cloneOpenFreeMapStyle();
-    liveLikeStyle.layers = [
-      { id: "background", type: "background" },
-      {
-        id: "water",
-        type: "fill",
-        source: "openmaptiles",
-        "source-layer": "water"
-      },
-      {
-        id: "road",
-        type: "line",
-        source: "openmaptiles",
-        "source-layer": "transportation"
-      },
-      {
-        id: "early-icon",
-        type: "symbol",
-        source: "openmaptiles",
-        "source-layer": "transportation_name",
-        layout: { "icon-image": "road-shield" }
-      },
-      {
-        id: "bridge-path",
-        type: "line",
-        source: "openmaptiles",
-        "source-layer": "transportation",
-        filter: ["==", ["get", "brunnel"], "bridge"]
-      },
-      {
-        id: "building",
-        type: "fill",
-        source: "openmaptiles",
-        "source-layer": "building"
-      },
-      {
-        id: "building-3d",
-        type: "fill-extrusion",
-        source: "openmaptiles",
-        "source-layer": "building"
-      },
-      {
-        id: "admin-boundary",
-        type: "line",
-        source: "openmaptiles",
-        "source-layer": "boundary"
-      },
-      {
-        id: "place-label",
-        type: "symbol",
-        source: "openmaptiles",
-        "source-layer": "place",
-        layout: { "text-field": ["get", "name"] }
-      }
-    ];
-    const style = await loadMapStyle("openfreemap_poster", {
-      fetcher: vi.fn(
-        async () =>
-          new Response(JSON.stringify(liveLikeStyle), {
-            headers: { "Content-Type": "application/json" }
-          })
-      )
-    });
-    const finalLayerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
-
-    expect(finalLayerIndex("early-icon")).toBeLessThan(finalLayerIndex("bridge-path"));
-    expect(finalLayerIndex("poster-trail-line")).toBe(finalLayerIndex("bridge-path") + 1);
-    expect(finalLayerIndex("poster-aerialway-line")).toBe(finalLayerIndex("poster-trail-line") + 1);
-    expect(finalLayerIndex("poster-shipway-line")).toBe(
-      finalLayerIndex("poster-aerialway-line") + 1
-    );
-    expect(finalLayerIndex("building")).toBe(finalLayerIndex("poster-shipway-line") + 1);
-    expect(finalLayerIndex("building-3d")).toBe(finalLayerIndex("building") + 1);
-    expect(finalLayerIndex("poster-building-outline")).toBe(finalLayerIndex("building-3d") + 1);
-    expect(finalLayerIndex("admin-boundary")).toBe(finalLayerIndex("poster-building-outline") + 1);
-    expect(finalLayerIndex("poster-park-label")).toBe(finalLayerIndex("admin-boundary") + 1);
-    expect(finalLayerIndex("place-label")).toBeGreaterThan(
-      finalLayerIndex("poster-lighthouse-label")
-    );
   });
 
   it("places the building outline after later buildings when a boundary appears first", async () => {
