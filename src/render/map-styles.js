@@ -37,8 +37,8 @@ const POSTER_AREA_DEFINITIONS = Object.freeze([
   Object.freeze({
     sourceLayer: "landcover",
     classification: "positive-filter",
-    classValues: Object.freeze(["ice", "glacier"]),
-    subclassValues: Object.freeze(["glacier", "ice"]),
+    classValues: Object.freeze(["ice"]),
+    subclassValues: Object.freeze(["glacier", "ice_shelf"]),
     color: POSTER_BACKGROUND_MAP_PALETTE.glacier
   }),
   Object.freeze({
@@ -598,24 +598,93 @@ function applyPosterBackgroundMapPalette(style) {
     return { ...styleObject };
   }
 
+  const resolveSupplementalVectorSource = createSupplementalVectorSourceResolver(styleObject);
   const posterLayers = styleObject.layers.flatMap(applyPosterBackgroundMapPaletteToLayers);
 
   return {
     ...styleObject,
-    layers: insertSupplementalPosterDetailLayers(posterLayers)
+    layers: insertSupplementalPosterDetailLayers(posterLayers, resolveSupplementalVectorSource)
   };
 }
 
-function createSupplementalPosterLabelLayers() {
-  return SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS.map((definition) => {
+/**
+ * @param {Record<string, unknown>} style
+ */
+function createSupplementalVectorSourceResolver(style) {
+  const sources =
+    style.sources && typeof style.sources === "object" && !Array.isArray(style.sources)
+      ? style.sources
+      : {};
+  const layers = Array.isArray(style.layers) ? style.layers : [];
+  const vectorSourceIds = new Set(
+    Object.entries(sources).flatMap(([sourceId, source]) =>
+      source &&
+      typeof source === "object" &&
+      !Array.isArray(source) &&
+      /** @type {{ type?: unknown }} */ (source).type === "vector"
+        ? [sourceId]
+        : []
+    )
+  );
+  const sourceIdsBySourceLayer = new Map();
+  const sourceLayersInStyle = new Set();
+
+  for (const layer of layers) {
+    if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+      continue;
+    }
+
+    const layerObject = /** @type {{ source?: unknown, "source-layer"?: unknown }} */ (layer);
+    const sourceLayer = layerObject["source-layer"];
+
+    if (typeof sourceLayer !== "string") {
+      continue;
+    }
+
+    sourceLayersInStyle.add(sourceLayer);
+
+    if (typeof layerObject.source !== "string" || !vectorSourceIds.has(layerObject.source)) {
+      continue;
+    }
+
+    const sourceIds = sourceIdsBySourceLayer.get(sourceLayer) ?? new Set();
+    sourceIds.add(layerObject.source);
+    sourceIdsBySourceLayer.set(sourceLayer, sourceIds);
+  }
+
+  const fallbackSourceId =
+    vectorSourceIds.size === 1 ? vectorSourceIds.values().next().value : undefined;
+
+  return (sourceLayer) => {
+    const sourceIds = sourceIdsBySourceLayer.get(sourceLayer);
+
+    if (sourceIds?.size === 1) {
+      return sourceIds.values().next().value;
+    }
+
+    return sourceLayersInStyle.has(sourceLayer) ? undefined : fallbackSourceId;
+  };
+}
+
+/**
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
+ */
+function createSupplementalPosterLabelLayers(resolveSource) {
+  return SUPPLEMENTAL_POSTER_LABEL_DEFINITIONS.flatMap((definition) => {
     const { id, sourceLayer, textSize } = definition;
+    const source = resolveSource(sourceLayer);
+
+    if (source === undefined) {
+      return [];
+    }
+
     const filter = "filter" in definition ? definition.filter : ["has", "name"];
     const layout = "layout" in definition ? definition.layout : {};
     const paint = "paint" in definition ? definition.paint : SUPPLEMENTAL_POSTER_LABEL_PAINT;
     const layer = {
       id,
       type: "symbol",
-      source: "openmaptiles",
+      source,
       "source-layer": sourceLayer,
       filter,
       layout: {
@@ -636,33 +705,34 @@ function createSupplementalPosterLabelLayers() {
       layer.maxzoom = definition.maxzoom;
     }
 
-    return layer;
+    return [layer];
   });
 }
 
 /**
  * @param {unknown[]} layers
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
  */
-function insertSupplementalPosterDetailLayers(layers) {
-  const layersWithAreas = insertSupplementalPosterAreaLayers(layers);
+function insertSupplementalPosterDetailLayers(layers, resolveSource) {
+  const layersWithAreas = insertSupplementalPosterAreaLayers(layers, resolveSource);
   const transportInsertionIndex = getSupplementalPosterTransportInsertionIndex(layersWithAreas);
   const layersWithTransport = [
     ...layersWithAreas.slice(0, transportInsertionIndex),
-    ...createSupplementalPosterTransportLineLayers(),
+    ...createSupplementalPosterTransportLineLayers(resolveSource),
     ...layersWithAreas.slice(transportInsertionIndex)
   ];
   const buildingOutlineInsertionIndex =
     getSupplementalPosterBuildingOutlineInsertionIndex(layersWithTransport);
   const layersWithGeometry = [
     ...layersWithTransport.slice(0, buildingOutlineInsertionIndex),
-    createSupplementalPosterBuildingOutlineLayer(),
+    ...createSupplementalPosterBuildingOutlineLayers(resolveSource),
     ...layersWithTransport.slice(buildingOutlineInsertionIndex)
   ];
   const textLabelInsertionIndex = getMapTextLabelBoundaryIndex(layersWithGeometry);
 
   return [
     ...layersWithGeometry.slice(0, textLabelInsertionIndex),
-    ...createSupplementalPosterLabelLayers(),
+    ...createSupplementalPosterLabelLayers(resolveSource),
     ...layersWithGeometry.slice(textLabelInsertionIndex)
   ];
 }
@@ -736,8 +806,9 @@ function isMapSourceGeometryLayer(layer, sourceLayer) {
 
 /**
  * @param {unknown[]} layers
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
  */
-function insertSupplementalPosterAreaLayers(layers) {
+function insertSupplementalPosterAreaLayers(layers, resolveSource) {
   const barrierSearchStartIndex =
     layers.findLastIndex((layer) => getLayerType(layer) === "background") + 1;
   const barrierOffset = layers
@@ -748,14 +819,23 @@ function insertSupplementalPosterAreaLayers(layers) {
 
   return [
     ...layers.slice(0, insertionIndex),
-    ...createSupplementalPosterAreaLayers(),
+    ...createSupplementalPosterAreaLayers(resolveSource),
     ...layers.slice(insertionIndex)
   ];
 }
 
-function createSupplementalPosterAreaLayers() {
+/**
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
+ */
+function createSupplementalPosterAreaLayers(resolveSource) {
   return POSTER_AREA_DEFINITIONS.flatMap((definition) => {
     if (!("supplementalLayerId" in definition)) {
+      return [];
+    }
+
+    const source = resolveSource(definition.sourceLayer);
+
+    if (source === undefined) {
       return [];
     }
 
@@ -763,7 +843,7 @@ function createSupplementalPosterAreaLayers() {
       {
         id: definition.supplementalLayerId,
         type: "fill",
-        source: "openmaptiles",
+        source,
         "source-layer": definition.sourceLayer,
         filter:
           "supplementalFilter" in definition
@@ -794,12 +874,21 @@ function isSupplementalPosterAreaBarrierLayer(layer) {
   );
 }
 
-function createSupplementalPosterTransportLineLayers() {
+/**
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
+ */
+function createSupplementalPosterTransportLineLayers(resolveSource) {
+  const source = resolveSource("transportation");
+
+  if (source === undefined) {
+    return [];
+  }
+
   return [
     {
       id: "poster-trail-line",
       type: "line",
-      source: "openmaptiles",
+      source,
       "source-layer": "transportation",
       filter: [
         "all",
@@ -821,7 +910,7 @@ function createSupplementalPosterTransportLineLayers() {
     {
       id: "poster-aerialway-line",
       type: "line",
-      source: "openmaptiles",
+      source,
       "source-layer": "transportation",
       filter: [
         "all",
@@ -842,7 +931,7 @@ function createSupplementalPosterTransportLineLayers() {
     {
       id: "poster-shipway-line",
       type: "line",
-      source: "openmaptiles",
+      source,
       "source-layer": "transportation",
       filter: [
         "all",
@@ -863,20 +952,41 @@ function createSupplementalPosterTransportLineLayers() {
   ];
 }
 
-function createSupplementalPosterBuildingOutlineLayer() {
-  return {
-    id: "poster-building-outline",
-    type: "line",
-    source: "openmaptiles",
-    "source-layer": "building",
-    minzoom: 13,
-    filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
-    paint: {
-      "line-color": POSTER_BACKGROUND_MAP_PALETTE.buildingOutline,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 14, 0.45, 16, 0.65, 20, 0.95],
-      "line-opacity": 0.9
-    }
-  };
+/**
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
+ */
+function createSupplementalPosterBuildingOutlineLayers(resolveSource) {
+  const source = resolveSource("building");
+
+  return source === undefined
+    ? []
+    : [
+        {
+          id: "poster-building-outline",
+          type: "line",
+          source,
+          "source-layer": "building",
+          minzoom: 13,
+          filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+          paint: {
+            "line-color": POSTER_BACKGROUND_MAP_PALETTE.buildingOutline,
+            "line-width": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              0.35,
+              14,
+              0.45,
+              16,
+              0.65,
+              20,
+              0.95
+            ],
+            "line-opacity": 0.9
+          }
+        }
+      ];
 }
 
 /**

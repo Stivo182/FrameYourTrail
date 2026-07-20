@@ -1,4 +1,4 @@
-import { featureFilter } from "@maplibre/maplibre-gl-style-spec";
+import { featureFilter, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { haversineMeters } from "../../src/core/geo.js";
 import { createI18n } from "../../src/i18n/index.js";
@@ -186,6 +186,19 @@ function createLanduseFillFixture(id, classValue) {
     source: "openmaptiles",
     "source-layer": "landuse",
     filter: ["==", ["get", "class"], classValue],
+    paint: {
+      "fill-color": "#ffffff"
+    }
+  };
+}
+
+function createLandcoverFillFixture(id, propertyName, propertyValue) {
+  return {
+    id,
+    type: "fill",
+    source: "openmaptiles",
+    "source-layer": "landcover",
+    filter: ["==", ["get", propertyName], propertyValue],
     paint: {
       "fill-color": "#ffffff"
     }
@@ -422,16 +435,11 @@ const openFreeMapStyle = {
         "fill-outline-color": "#123456"
       }
     },
-    {
-      id: "landcover",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "landcover",
-      filter: ["all", ["==", ["get", "class"], "ice"], ["==", ["get", "subclass"], "glacier"]],
-      paint: {
-        "fill-color": "#ffffff"
-      }
-    },
+    createLandcoverFillFixture("landcover", "class", "ice"),
+    createLandcoverFillFixture("landcover-glacier", "subclass", "glacier"),
+    createLandcoverFillFixture("landcover-ice-shelf", "subclass", "ice_shelf"),
+    createLandcoverFillFixture("landcover-glacier-class-decoy", "class", "glacier"),
+    createLandcoverFillFixture("landcover-ice-subclass-decoy", "subclass", "ice"),
     {
       id: "natural-area-a",
       type: "fill",
@@ -863,6 +871,86 @@ describe("map helpers", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("resolves every supplemental vector layer from a mechanically renamed source", async () => {
+    const renamedStyle = cloneOpenFreeMapStyle();
+    renamedStyle.sources.posterTiles = renamedStyle.sources.openmaptiles;
+    delete renamedStyle.sources.openmaptiles;
+    renamedStyle.layers = renamedStyle.layers.map((layer) =>
+      layer.source === "openmaptiles" ? { ...layer, source: "posterTiles" } : layer
+    );
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(renamedStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const supplementalVectorSources = style.layers.flatMap((layer) =>
+      layer.id.startsWith("poster-") &&
+      "source" in layer &&
+      typeof layer["source-layer"] === "string"
+        ? [layer.source]
+        : []
+    );
+
+    expect(supplementalVectorSources.length).toBeGreaterThan(0);
+    expect(new Set(supplementalVectorSources)).toEqual(new Set(["posterTiles"]));
+    expect(style.layers.some((layer) => "source" in layer && layer.source === "openmaptiles")).toBe(
+      false
+    );
+    expect(validateStyleMin(style)).toEqual([]);
+  });
+
+  it("fails closed for ambiguous supplemental source layers while preserving exact owners", async () => {
+    const ambiguousStyle = cloneOpenFreeMapStyle();
+    ambiguousStyle.sources.posterPlaces = {
+      type: "vector",
+      url: "https://example.test/places.json"
+    };
+    ambiguousStyle.layers.splice(
+      2,
+      0,
+      {
+        id: "mountain-peak-owner",
+        type: "circle",
+        source: "posterPlaces",
+        "source-layer": "mountain_peak"
+      },
+      {
+        id: "alternate-water-name-owner",
+        type: "circle",
+        source: "posterPlaces",
+        "source-layer": "water_name"
+      }
+    );
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(ambiguousStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerSource = (id) => {
+      const styleLayer = layer(id);
+
+      return styleLayer && "source" in styleLayer ? styleLayer.source : undefined;
+    };
+
+    expect(layerSource("poster-park-label")).toBe("openmaptiles");
+    expect(layerSource("poster-mountain-peak-label")).toBe("posterPlaces");
+    expect(layerSource("poster-trail-line")).toBe("openmaptiles");
+    expect(layerSource("poster-building-outline")).toBe("openmaptiles");
+    expect(layer("poster-water-name-line-label")).toBeUndefined();
+    expect(layer("poster-water-name-point-label")).toBeUndefined();
+    expect(layer("poster-tourist-poi-label")).toBeUndefined();
+    expect(layer("poster-lighthouse-label")).toBeUndefined();
   });
 
   it("adds supplemental named park and mountain peak labels to the poster OpenFreeMap style", async () => {
@@ -1999,6 +2087,34 @@ describe("map helpers", () => {
     expect(layerPaint("landcover-sand-negative")?.["fill-color"]).toBe("#d7dfd0");
     expect(layerPaint("park-surface-decoy")?.["fill-color"]).toBe("#d7dfd0");
     expect(layerPaint("agricultural-landuse-decoy")?.["fill-color"]).toBe("#d7dfd0");
+  });
+
+  it("uses the OpenMapTiles ice class and glacier or ice-shelf subclasses exactly", async () => {
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+
+    expect(layer("landcover")).toMatchObject({
+      filter: ["==", ["get", "class"], "ice"],
+      paint: { "fill-color": "#dbe9e8" }
+    });
+    expect(layer("landcover-glacier")).toMatchObject({
+      filter: ["==", ["get", "subclass"], "glacier"],
+      paint: { "fill-color": "#dbe9e8" }
+    });
+    expect(layer("landcover-ice-shelf")).toMatchObject({
+      filter: ["==", ["get", "subclass"], "ice_shelf"],
+      paint: { "fill-color": "#dbe9e8" }
+    });
+    expect(layer("landcover-glacier-class-decoy")).toMatchObject({
+      filter: ["==", ["get", "class"], "glacier"],
+      paint: { "fill-color": "#d7dfd0" }
+    });
+    expect(layer("landcover-ice-subclass-decoy")).toMatchObject({
+      filter: ["==", ["get", "subclass"], "ice"],
+      paint: { "fill-color": "#d7dfd0" }
+    });
   });
 
   it("classifies current and representative landuse fills without broadening mixed filters", async () => {

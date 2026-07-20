@@ -556,9 +556,11 @@ Map requirements:
   zoom
 - road names, named trail/path/track labels, trail/path/track linework, and
   cable lift/aerialway detail stay visually distinct within the poster palette
-  where OpenFreeMap exposes the underlying transportation data; supplemental
-  surface transport detail preserves upstream bridge/tunnel hierarchy and
-  stays below buildings and administrative boundaries
+  where the loaded OpenFreeMap style advertises the underlying vector data;
+  supplemental detail follows that vector source even when its internal source
+  id changes, omits detail with ambiguous source ownership, preserves upstream
+  bridge/tunnel hierarchy, and keeps surface transport below buildings and
+  administrative boundaries
 - the default OpenFreeMap style supplements named park labels from zoom 10 and
   mountain peak labels from zoom 9 when those vector tile source layers expose
   names, supplements medium-zoom river and water body labels where OpenFreeMap
@@ -581,7 +583,8 @@ Map requirements:
   OpenFreeMap exposes the underlying vector data; building fills and outlines
   use enough contrast to remain visible at source zooms that include buildings
 - where OpenFreeMap's current OpenMapTiles source exposes the corresponding
-  area data, the default style keeps glacier/ice, sand/beach/dune,
+  area data, the default style keeps the `ice` class and `glacier`/`ice_shelf`
+  subclasses, sand/beach/dune,
   rock/`bare_rock`/scree, the farmland group (`farmland`, `farm`, `orchard`,
   `vineyard`, and `plant_nursery`), and aeroway polygons distinct from park and
   generic landcover fills; all current OpenMapTiles landuse areas receive
