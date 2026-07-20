@@ -1,6 +1,11 @@
 import { getBounds, haversineMeters } from "../core/geo.js";
 import { createI18n } from "../i18n/index.js";
-import { DEFAULT_MAP_STYLE_ID, loadMapStyle, normalizeMapStyleId } from "./map-styles.js";
+import {
+  DEFAULT_MAP_STYLE_ID,
+  getMapTextLabelBoundaryIndex,
+  loadMapStyle,
+  normalizeMapStyleId
+} from "./map-styles.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
@@ -606,19 +611,6 @@ function createEndpointFeature(point, kind, label) {
 }
 
 /**
- * @param {import("maplibre-gl").StyleSpecification["layers"]} layers
- */
-function getFirstSymbolAfterFinalGeometryLayerId(layers) {
-  const finalGeometryLayerIndex = layers.findLastIndex((layer) => layer.type !== "symbol");
-
-  if (finalGeometryLayerIndex === -1) {
-    return undefined;
-  }
-
-  return layers.slice(finalGeometryLayerIndex + 1).find((layer) => layer.type === "symbol")?.id;
-}
-
-/**
  * @param {HTMLElement} host
  * @param {RoutePoint[]} points
  * @param {ReturnType<typeof createI18n>} [i18n]
@@ -662,7 +654,8 @@ export async function initRouteMap(
       loadMapStyle(mapStyleId)
     ]);
     throwIfRouteMapAborted(signal);
-    const routeLayerAnchorId = getFirstSymbolAfterFinalGeometryLayerId(openFreeMapStyle.layers);
+    const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(openFreeMapStyle.layers);
+    const routeLayerAnchorId = openFreeMapStyle.layers[textLabelBoundaryIndex]?.id;
 
     map = new maplibregl.Map({
       container: mapNode,

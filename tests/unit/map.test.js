@@ -6,6 +6,7 @@ import { LOCALES } from "../../src/i18n/locales.js";
 import {
   DEFAULT_MAP_STYLE_ID,
   MAP_STYLE_OPTIONS,
+  getMapTextLabelBoundaryIndex,
   getMapStyleDefinition,
   loadMapStyle,
   normalizeMapStyleId
@@ -384,50 +385,13 @@ const openFreeMapStyle = {
       }
     },
     {
-      id: "waterway_line_label",
+      id: "oneway-arrow",
       type: "symbol",
       source: "openmaptiles",
-      "source-layer": "waterway",
-      minzoom: 10,
+      "source-layer": "transportation",
       layout: {
         "symbol-placement": "line",
-        "text-field": ["get", "name"],
-        "text-size": 10
-      },
-      paint: {
-        "text-color": "#6b7280",
-        "text-halo-color": "#ffffff",
-        "text-halo-width": 0.5
-      }
-    },
-    {
-      id: "water_name_point_label",
-      type: "symbol",
-      source: "openmaptiles",
-      "source-layer": "water_name",
-      layout: {
-        "symbol-placement": "point",
-        "text-field": ["get", "name"],
-        "text-size": 11
-      },
-      paint: {
-        "text-color": "#6b7280",
-        "text-halo-color": "#ffffff"
-      }
-    },
-    {
-      id: "water_name_line_label",
-      type: "symbol",
-      source: "openmaptiles",
-      "source-layer": "water_name",
-      layout: {
-        "symbol-placement": "line",
-        "text-field": ["get", "name"],
-        "text-size": 11
-      },
-      paint: {
-        "text-color": "#6b7280",
-        "text-halo-color": "#ffffff"
+        "icon-image": "oneway"
       }
     },
     {
@@ -638,10 +602,60 @@ const openFreeMapStyle = {
       }
     },
     {
+      id: "waterway_line_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "waterway",
+      minzoom: 10,
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 10
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 0.5
+      }
+    },
+    {
+      id: "water_name_point_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "water_name",
+      layout: {
+        "symbol-placement": "point",
+        "text-field": ["get", "name"],
+        "text-size": 11
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
+      id: "water_name_line_label",
+      type: "symbol",
+      source: "openmaptiles",
+      "source-layer": "water_name",
+      layout: {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"],
+        "text-size": 11
+      },
+      paint: {
+        "text-color": "#6b7280",
+        "text-halo-color": "#ffffff"
+      }
+    },
+    {
       id: "place-label",
       type: "symbol",
       source: "openmaptiles",
       "source-layer": "place",
+      layout: {
+        "text-field": ["get", "name"]
+      },
       paint: {
         "text-color": "#1f2937",
         "text-halo-color": "#ffffff"
@@ -772,6 +786,32 @@ describe("map helpers", () => {
     expect(getMapStyleDefinition("cyclosm")).toMatchObject({ id: "cyclosm", kind: "raster" });
     expect(normalizeMapStyleId("cyclosm")).toBe("cyclosm");
     expect(normalizeMapStyleId("missing")).toBe(DEFAULT_MAP_STYLE_ID);
+  });
+
+  it("exports one fail-safe geometry-to-text-label boundary", () => {
+    expect(
+      getMapTextLabelBoundaryIndex([
+        { id: "early-arrow", type: "symbol" },
+        { id: "road", type: "line" },
+        { id: "building", type: "fill" },
+        { id: "late-arrow", type: "symbol", layout: { "icon-image": "oneway" } },
+        { id: "place-label", type: "symbol", layout: { "text-field": ["get", "name"] } },
+        { id: "road-label", type: "symbol", layout: { "text-field": ["get", "name"] } }
+      ])
+    ).toBe(4);
+    expect(
+      getMapTextLabelBoundaryIndex([
+        { id: "early-arrow", type: "symbol" },
+        { id: "early-shield", type: "symbol" }
+      ])
+    ).toBe(2);
+    expect(
+      getMapTextLabelBoundaryIndex([
+        { id: "background", type: "background" },
+        { id: "road", type: "line" }
+      ])
+    ).toBe(2);
+    expect(getMapTextLabelBoundaryIndex([])).toBe(0);
   });
 
   it("generates cloned raster MapLibre styles with attribution", async () => {
@@ -952,12 +992,20 @@ describe("map helpers", () => {
     });
   });
 
-  it("inserts supplemental labels before native place and road or path labels", async () => {
+  it("inserts supplemental labels after geometry and before every native text label", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
-    const nativeLabelIds = ["place-label", "highway-name-major", "highway-name-path"];
+    const finalGeometryLayerIndex = layerIndex("poster-building-outline");
+    const nativeTextLabelIds = openFreeMapStyle.layers
+      .filter(
+        (styleLayer) =>
+          styleLayer.type === "symbol" &&
+          styleLayer.layout &&
+          Object.hasOwn(styleLayer.layout, "text-field")
+      )
+      .map((styleLayer) => styleLayer.id);
     const supplementalLabelIds = style.layers
       .filter((styleLayer) => styleLayer.type === "symbol" && styleLayer.id.startsWith("poster-"))
       .map((styleLayer) => styleLayer.id);
@@ -973,10 +1021,22 @@ describe("map helpers", () => {
       "poster-shipway-label",
       "poster-lighthouse-label"
     ]);
+    expect(nativeTextLabelIds).toEqual([
+      "waterway_line_label",
+      "water_name_point_label",
+      "water_name_line_label",
+      "place-label",
+      "highway-name-major",
+      "highway-name-minor",
+      "highway-name-path"
+    ]);
+    expect(layerIndex("oneway-arrow")).toBeLessThan(finalGeometryLayerIndex);
 
     for (const supplementalLabelId of supplementalLabelIds) {
-      for (const nativeLabelId of nativeLabelIds) {
-        expect(layerIndex(supplementalLabelId)).toBeLessThan(layerIndex(nativeLabelId));
+      expect(layerIndex(supplementalLabelId)).toBeGreaterThan(finalGeometryLayerIndex);
+
+      for (const nativeTextLabelId of nativeTextLabelIds) {
+        expect(layerIndex(supplementalLabelId)).toBeLessThan(layerIndex(nativeTextLabelId));
       }
     }
   });
@@ -2102,6 +2162,9 @@ describe("map helpers", () => {
       "poster-aerialway-label",
       "poster-shipway-label",
       "poster-lighthouse-label",
+      "waterway_line_label",
+      "water_name_point_label",
+      "water_name_line_label",
       "place-label",
       "highway-name-major",
       "highway-name-minor",

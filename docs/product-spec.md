@@ -557,13 +557,14 @@ Map requirements:
 - road names, named trail/path/track labels, trail/path/track linework, and
   cable lift/aerialway detail stay visually distinct within the poster palette
   where OpenFreeMap exposes the underlying transportation data
-- the default OpenFreeMap style supplements named park and mountain peak labels
-  when those vector tile source layers expose names, supplements medium-zoom
-  river and water body labels where OpenFreeMap exposes named waterway or
-  water-name features, supplements detailed-zoom tourist landmark labels for
-  named attractions, castles, museums, temples, shrines, and viewpoints, and
-  supplements cable lift/aerialway and sea/ferry route names when the
-  transportation name source layer exposes names; it also adds best-effort
+- the default OpenFreeMap style supplements named park labels from zoom 10 and
+  mountain peak labels from zoom 9 when those vector tile source layers expose
+  names, supplements medium-zoom river and water body labels where OpenFreeMap
+  exposes named waterway or water-name features, supplements detailed-zoom
+  tourist landmark labels for named attractions, castles, museums, temples,
+  shrines, and viewpoints, and supplements cable lift/aerialway and sea/ferry
+  route names when the transportation name source layer exposes names; it also
+  adds best-effort
   lighthouse labels from named attraction or museum POIs whose `name`,
   `name_en`, or `name:latin` value contains `lighthouse`, `light house`, or
   `灯台`, equals `Light`, or ends with the token ` Light`; internal or plural
@@ -571,6 +572,9 @@ Map requirements:
   are excluded because OpenFreeMap tiles do not expose a reliable lighthouse
   class;
   `landcover` and `landuse` are not labeled because they do not expose names
+- supplemental text labels have lower collision priority than every native
+  textual map label; route lines render above map geometry but below the text
+  label tier, while start and finish endpoint circles and labels remain on top
 - river, water body, sea/ferry route, and building detail stays readable where
   OpenFreeMap exposes the underlying vector data; building fills and outlines
   use enough contrast to remain visible at source zooms that include buildings

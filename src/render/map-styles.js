@@ -645,7 +645,7 @@ function createSupplementalPosterLabelLayers() {
  */
 function insertSupplementalPosterDetailLayers(layers) {
   const layersWithAreas = insertSupplementalPosterAreaLayers(layers);
-  const insertionIndex = getSupplementalPosterTransportInsertionIndex(layersWithAreas);
+  const insertionIndex = getMapTextLabelBoundaryIndex(layersWithAreas);
 
   return [
     ...layersWithAreas.slice(0, insertionIndex),
@@ -797,12 +797,42 @@ function createSupplementalPosterTransportLineLayers() {
 }
 
 /**
+ * Returns the first textual symbol index after the final non-symbol layer.
+ * Icon-only symbols stay in the geometry tier. If no text-label tier exists,
+ * the fail-safe boundary is the end of the layer list.
+ *
  * @param {unknown[]} layers
  */
-function getSupplementalPosterTransportInsertionIndex(layers) {
-  const lastNonSymbolIndex = layers.findLastIndex((layer) => getLayerType(layer) !== "symbol");
+export function getMapTextLabelBoundaryIndex(layers) {
+  const finalNonSymbolIndex = layers.findLastIndex((layer) => getLayerType(layer) !== "symbol");
 
-  return lastNonSymbolIndex === -1 ? layers.length : lastNonSymbolIndex + 1;
+  if (finalNonSymbolIndex === -1) {
+    return layers.length;
+  }
+
+  const textLabelOffset = layers.slice(finalNonSymbolIndex + 1).findIndex(isMapTextLabelLayer);
+
+  return textLabelOffset === -1 ? layers.length : finalNonSymbolIndex + textLabelOffset + 1;
+}
+
+/**
+ * @param {unknown} layer
+ */
+function isMapTextLabelLayer(layer) {
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    return false;
+  }
+
+  const layerObject = /** @type {{ type?: unknown, layout?: unknown }} */ (layer);
+  const { layout } = layerObject;
+
+  return (
+    layerObject.type === "symbol" &&
+    layout !== null &&
+    typeof layout === "object" &&
+    !Array.isArray(layout) &&
+    Object.hasOwn(layout, "text-field")
+  );
 }
 
 /**
