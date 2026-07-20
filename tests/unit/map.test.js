@@ -154,6 +154,15 @@ function readOpenFreeMapLibertyContractFixture() {
   );
 }
 
+function readOpenFreeMapProviderFeatureContractFixture() {
+  return JSON.parse(
+    readFileSync(
+      resolve(import.meta.dirname, "../fixtures/openfreemap-provider-feature-contract.json"),
+      "utf8"
+    )
+  );
+}
+
 const speedSeries = [
   {
     index: 1,
@@ -914,14 +923,72 @@ describe("map helpers", () => {
     }
   });
 
-  it("preserves the captured Liberty provider contract with a renamed vector source", async () => {
+  it("preserves the exact captured Liberty contract across original and renamed sources", async () => {
     const fixture = readOpenFreeMapLibertyContractFixture();
+    const retainedLayerIds = [
+      "background",
+      "natural_earth",
+      "park",
+      "landuse_residential",
+      "landcover_wetland",
+      "waterway_river",
+      "water",
+      "aeroway_fill",
+      "road_area_pattern",
+      "road_one_way_arrow",
+      "bridge_path_pedestrian",
+      "building",
+      "building-3d",
+      "boundary_2",
+      "waterway_line_label",
+      "poi_r1",
+      "highway-name-path",
+      "highway-shield-non-us",
+      "label_city"
+    ];
+    const expectedGeneratedVectorLayerIds = new Set([
+      "poster-landuse-residential",
+      "poster-landuse-commercial",
+      "poster-landuse-industrial",
+      "poster-landuse-civic",
+      "poster-landuse-recreation",
+      "poster-landuse-quarry",
+      "poster-landcover-sand",
+      "poster-landcover-rock",
+      "poster-landcover-farmland",
+      "poster-trail-line",
+      "poster-aerialway-line",
+      "poster-shipway-line",
+      "poster-building-outline",
+      "poster-park-label",
+      "poster-mountain-peak-label",
+      "poster-waterway-label",
+      "poster-water-name-line-label",
+      "poster-water-name-point-label",
+      "poster-tourist-poi-label",
+      "poster-aerialway-label",
+      "poster-shipway-label",
+      "poster-lighthouse-label"
+    ]);
+    const orderingAnchorIds = [
+      "road_one_way_arrow",
+      "bridge_path_pedestrian",
+      "poster-trail-line",
+      "poster-shipway-line",
+      "building",
+      "building-3d",
+      "poster-building-outline",
+      "boundary_2"
+    ];
 
     expect(validateStyleMin(fixture)).toEqual([]);
-    expect(fixture.metadata).toMatchObject({
+    expect(fixture.metadata).toEqual({
       capturedFrom: "https://tiles.openfreemap.org/styles/liberty",
-      capturedOn: "2026-07-20"
+      capturedOn: "2026-07-20",
+      curatedScope:
+        "19 unchanged representative Liberty layers retained in upstream order for poster extension contracts"
     });
+    expect(fixture.layers.map((layer) => layer.id)).toEqual(retainedLayerIds);
 
     const renamedStyle = JSON.parse(JSON.stringify(fixture));
     renamedStyle.sources["contract-liberty-vector"] = renamedStyle.sources.openmaptiles;
@@ -932,7 +999,15 @@ describe("map helpers", () => {
 
     expect(validateStyleMin(renamedStyle)).toEqual([]);
 
-    const style = await loadMapStyle("openfreemap_poster", {
+    const originalPosterStyle = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(fixture), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const renamedPosterStyle = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(
         async () =>
           new Response(JSON.stringify(renamedStyle), {
@@ -940,90 +1015,146 @@ describe("map helpers", () => {
           })
       )
     });
-    const supplementalVectorSources = style.layers.flatMap((layer) =>
-      layer.id.startsWith("poster-") &&
-      "source" in layer &&
-      typeof layer["source-layer"] === "string"
-        ? [layer.source]
-        : []
-    );
-    const retainedLayerIds = renamedStyle.layers.map((layer) => layer.id);
     const retainedLayerIdSet = new Set(retainedLayerIds);
-    const finalLayerIndex = (id) => style.layers.findIndex((layer) => layer.id === id);
-    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
-    const nativeTextLabelIds = renamedStyle.layers
-      .filter(
-        (styleLayer) =>
-          styleLayer.type === "symbol" &&
-          styleLayer.layout &&
-          Object.hasOwn(styleLayer.layout, "text-field")
-      )
-      .map((styleLayer) => styleLayer.id);
-    const supplementalTextLabelIds = style.layers
-      .filter(
-        (styleLayer) =>
-          styleLayer.id.startsWith("poster-") &&
-          styleLayer.type === "symbol" &&
-          styleLayer.layout &&
-          Object.hasOwn(styleLayer.layout, "text-field")
-      )
-      .map((styleLayer) => styleLayer.id);
+    const generatedVectorLayerIdsByStyle = [];
 
-    expect(supplementalVectorSources.length).toBeGreaterThan(0);
-    expect(new Set(supplementalVectorSources)).toEqual(new Set(["contract-liberty-vector"]));
-    expect(style.sources).not.toHaveProperty("openmaptiles");
-    expect(style.layers.some((layer) => "source" in layer && layer.source === "openmaptiles")).toBe(
-      false
-    );
+    for (const { style, expectedVectorSource } of [
+      { style: originalPosterStyle, expectedVectorSource: "openmaptiles" },
+      { style: renamedPosterStyle, expectedVectorSource: "contract-liberty-vector" }
+    ]) {
+      const finalLayerIds = style.layers.map((layer) => layer.id);
+      const finalLayerIndex = (id) => finalLayerIds.indexOf(id);
+      const generatedVectorLayers = style.layers.filter(
+        (layer) =>
+          layer.id.startsWith("poster-") &&
+          "source" in layer &&
+          typeof layer["source-layer"] === "string"
+      );
+      const generatedVectorLayerIds = generatedVectorLayers.map((layer) => layer.id);
+      const nativeTextLabelIds = fixture.layers
+        .filter(
+          (styleLayer) =>
+            styleLayer.type === "symbol" &&
+            styleLayer.layout &&
+            Object.hasOwn(styleLayer.layout, "text-field")
+        )
+        .map((styleLayer) => styleLayer.id);
+      const supplementalTextLabelIds = style.layers
+        .filter(
+          (styleLayer) =>
+            styleLayer.id.startsWith("poster-") &&
+            styleLayer.type === "symbol" &&
+            styleLayer.layout &&
+            Object.hasOwn(styleLayer.layout, "text-field")
+        )
+        .map((styleLayer) => styleLayer.id);
+
+      expect(validateStyleMin(style)).toEqual([]);
+      expect(generatedVectorLayerIds.length).toBeGreaterThan(0);
+      expect(new Set(generatedVectorLayerIds)).toEqual(expectedGeneratedVectorLayerIds);
+      expect(
+        new Set(generatedVectorLayers.flatMap((layer) => ("source" in layer ? [layer.source] : [])))
+      ).toEqual(new Set([expectedVectorSource]));
+      expect(
+        style.layers.filter((layer) => retainedLayerIdSet.has(layer.id)).map((layer) => layer.id)
+      ).toEqual(retainedLayerIds);
+      expect(finalLayerIds).toEqual(expect.arrayContaining(orderingAnchorIds));
+      expect(nativeTextLabelIds.length).toBeGreaterThan(0);
+      expect(supplementalTextLabelIds.length).toBeGreaterThan(0);
+
+      expect(finalLayerIndex("road_one_way_arrow")).toBeLessThan(
+        finalLayerIndex("bridge_path_pedestrian")
+      );
+      expect(finalLayerIndex("bridge_path_pedestrian")).toBeLessThan(
+        finalLayerIndex("poster-trail-line")
+      );
+      expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("building"));
+      expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("boundary_2"));
+      expect(finalLayerIndex("poster-building-outline")).toBeGreaterThan(
+        finalLayerIndex("building-3d")
+      );
+      expect(finalLayerIndex("poster-building-outline")).toBeLessThan(
+        finalLayerIndex("boundary_2")
+      );
+      expect(Math.max(...supplementalTextLabelIds.map(finalLayerIndex))).toBeLessThan(
+        Math.min(...nativeTextLabelIds.map(finalLayerIndex))
+      );
+
+      generatedVectorLayerIdsByStyle.push(new Set(generatedVectorLayerIds));
+    }
+
+    expect(generatedVectorLayerIdsByStyle[0]).toEqual(generatedVectorLayerIdsByStyle[1]);
+    expect(renamedPosterStyle.sources).not.toHaveProperty("openmaptiles");
     expect(
-      style.layers.filter((layer) => retainedLayerIdSet.has(layer.id)).map((layer) => layer.id)
-    ).toEqual(retainedLayerIds);
+      renamedPosterStyle.layers.some(
+        (layer) => "source" in layer && layer.source === "openmaptiles"
+      )
+    ).toBe(false);
+  });
 
-    expect(finalLayerIndex("road_one_way_arrow")).toBeLessThan(
-      finalLayerIndex("bridge_path_pedestrian")
-    );
-    expect(finalLayerIndex("bridge_path_pedestrian")).toBeLessThan(
-      finalLayerIndex("poster-trail-line")
-    );
-    expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("building"));
-    expect(finalLayerIndex("poster-shipway-line")).toBeLessThan(finalLayerIndex("boundary_2"));
-    expect(finalLayerIndex("poster-building-outline")).toBeGreaterThan(
-      finalLayerIndex("building-3d")
-    );
-    expect(finalLayerIndex("poster-building-outline")).toBeLessThan(finalLayerIndex("boundary_2"));
-    expect(Math.max(...supplementalTextLabelIds.map(finalLayerIndex))).toBeLessThan(
-      Math.min(...nativeTextLabelIds.map(finalLayerIndex))
-    );
+  it("matches captured provider features with generated transport filters", async () => {
+    const libertyFixture = readOpenFreeMapLibertyContractFixture();
+    const providerFixture = readOpenFreeMapProviderFeatureContractFixture();
+    const posterLayerIdByFeatureId = {
+      "miyajima-ropeway-line": "poster-aerialway-line",
+      "miyajima-ropeway-label": "poster-aerialway-label",
+      "jr-miyajima-ferry-line": "poster-shipway-line",
+      "jr-miyajima-ferry-label": "poster-shipway-label"
+    };
 
-    expect(layer("poster-aerialway-line")).toMatchObject({
-      source: "contract-liberty-vector",
-      "source-layer": "transportation",
-      filter: [
-        "all",
-        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["==", ["get", "class"], "aerialway"]
-      ]
+    expect(providerFixture.metadata).toEqual({
+      tilesetUrlTemplate: "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
+      capturedOn: "2026-07-20",
+      decoder: "@mapbox/vector-tile 2.0.4",
+      curatedScope:
+        "Decoded representative aerialway and ferry line and name features for poster provider extension contracts"
     });
-    expect(layer("poster-shipway-line")).toMatchObject({
-      source: "contract-liberty-vector",
-      "source-layer": "transportation",
-      filter: [
-        "all",
-        ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
-        ["==", ["get", "class"], "ferry"]
-      ]
+    expect(providerFixture.features.map((feature) => feature.id)).toEqual([
+      "miyajima-ropeway-line",
+      "miyajima-ropeway-label",
+      "jr-miyajima-ferry-line",
+      "jr-miyajima-ferry-label"
+    ]);
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(libertyFixture), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
     });
-    expect(layer("poster-aerialway-label")).toMatchObject({
-      source: "contract-liberty-vector",
-      "source-layer": "transportation_name",
-      filter: ["all", ["has", "name"], ["==", ["get", "class"], "aerialway"]]
-    });
-    expect(layer("poster-shipway-label")).toMatchObject({
-      source: "contract-liberty-vector",
-      "source-layer": "transportation_name",
-      filter: ["all", ["has", "name"], ["==", ["get", "class"], "ferry"]]
-    });
-    expect(validateStyleMin(style)).toEqual([]);
+
+    for (const feature of providerFixture.features) {
+      const posterLayerId = posterLayerIdByFeatureId[feature.id];
+      const posterLayer = style.layers.find((layer) => layer.id === posterLayerId);
+
+      expect(posterLayer).toBeDefined();
+      if (!posterLayer || !("filter" in posterLayer) || posterLayer.filter === undefined) {
+        throw new Error(`Expected filtered poster layer for ${feature.id}`);
+      }
+
+      expect(posterLayer["source-layer"]).toBe(feature.sourceLayer);
+      expect(feature.geometryType).toBe("LineString");
+      expect(feature.tile.url).toBe(
+        providerFixture.metadata.tilesetUrlTemplate
+          .replace("{z}", String(feature.tile.z))
+          .replace("{x}", String(feature.tile.x))
+          .replace("{y}", String(feature.tile.y))
+      );
+
+      const compiledFilter = featureFilter(posterLayer.filter).filter;
+
+      expect(
+        compiledFilter(
+          { zoom: feature.tile.z },
+          {
+            type: feature.geometryType,
+            properties: feature.properties
+          }
+        )
+      ).toBe(true);
+    }
   });
 
   it("fails closed for ambiguous supplemental source layers while preserving exact owners", async () => {

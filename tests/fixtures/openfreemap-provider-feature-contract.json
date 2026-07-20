@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "metadata": {
+    "tilesetUrlTemplate": "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
+    "capturedOn": "2026-07-20",
+    "decoder": "@mapbox/vector-tile 2.0.4",
+    "curatedScope": "Decoded representative aerialway and ferry line and name features for poster provider extension contracts"
+  },
+  "features": [
+    {
+      "id": "miyajima-ropeway-line",
+      "tile": {
+        "z": 14,
+        "x": 14214,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+      },
+      "sourceLayer": "transportation",
+      "geometryType": "LineString",
+      "properties": {
+        "class": "aerialway",
+        "subclass": "cable_car",
+        "oneway": 1
+      }
+    },
+    {
+      "id": "miyajima-ropeway-label",
+      "tile": {
+        "z": 14,
+        "x": 14214,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+      },
+      "sourceLayer": "transportation_name",
+      "geometryType": "LineString",
+      "properties": {
+        "name": "宮島ロープウエー",
+        "class": "aerialway",
+        "subclass": "cable_car",
+        "name_en": "Miyajima Ropeway"
+      }
+    },
+    {
+      "id": "jr-miyajima-ferry-line",
+      "tile": {
+        "z": 14,
+        "x": 14213,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+      },
+      "sourceLayer": "transportation",
+      "geometryType": "LineString",
+      "properties": {
+        "class": "ferry"
+      }
+    },
+    {
+      "id": "jr-miyajima-ferry-label",
+      "tile": {
+        "z": 14,
+        "x": 14213,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+      },
+      "sourceLayer": "transportation_name",
+      "geometryType": "LineString",
+      "properties": {
+        "name": "JR宮島連絡船",
+        "class": "ferry",
+        "name_en": "JR Miyajima Ferry"
+      }
+    }
+  ]
+}
