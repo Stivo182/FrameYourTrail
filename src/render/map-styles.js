@@ -686,18 +686,21 @@ function getSupplementalPosterTransportInsertionIndex(layers) {
  */
 function getSupplementalPosterBuildingOutlineInsertionIndex(layers) {
   const textLabelBoundaryIndex = getMapTextLabelBoundaryIndex(layers);
+  const finalBuildingGeometryIndex = layers
+    .slice(0, textLabelBoundaryIndex)
+    .findLastIndex(isMapBuildingGeometryLayer);
+
+  if (finalBuildingGeometryIndex !== -1) {
+    return finalBuildingGeometryIndex + 1;
+  }
+
   const administrativeBoundaryOffset = layers
     .slice(0, textLabelBoundaryIndex)
     .findIndex(isMapAdministrativeBoundaryLayer);
-  const administrativeBoundaryIndex =
-    administrativeBoundaryOffset === -1 ? textLabelBoundaryIndex : administrativeBoundaryOffset;
-  const finalBuildingGeometryIndex = layers
-    .slice(0, administrativeBoundaryIndex)
-    .findLastIndex(isMapBuildingGeometryLayer);
 
-  return finalBuildingGeometryIndex === -1
-    ? administrativeBoundaryIndex
-    : finalBuildingGeometryIndex + 1;
+  return administrativeBoundaryOffset === -1
+    ? textLabelBoundaryIndex
+    : administrativeBoundaryOffset;
 }
 
 /**
@@ -802,7 +805,7 @@ function createSupplementalPosterTransportLineLayers() {
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
         ["match", ["get", "class"], ["path", "track"], true, false],
-        ["!", ["has", "brunnel"]]
+        ["match", ["get", "brunnel"], ["bridge", "tunnel"], false, true]
       ],
       layout: {
         "line-cap": "round",

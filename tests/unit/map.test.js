@@ -1079,7 +1079,7 @@ describe("map helpers", () => {
         "all",
         ["match", ["geometry-type"], ["LineString", "MultiLineString"], true, false],
         ["match", ["get", "class"], ["path", "track"], true, false],
-        ["!", ["has", "brunnel"]]
+        ["match", ["get", "brunnel"], ["bridge", "tunnel"], false, true]
       ],
       layout: {
         "line-cap": "round",
@@ -1173,6 +1173,7 @@ describe("map helpers", () => {
 
     expect(matchesTrailFeature({ class: "path" })).toBe(true);
     expect(matchesTrailFeature({ class: "track" })).toBe(true);
+    expect(matchesTrailFeature({ class: "path", brunnel: "ford" })).toBe(true);
     expect(matchesTrailFeature({ class: "path", brunnel: "bridge" })).toBe(false);
     expect(matchesTrailFeature({ class: "track", brunnel: "tunnel" })).toBe(false);
   });
@@ -1257,6 +1258,60 @@ describe("map helpers", () => {
     expect(finalLayerIndex("place-label")).toBeGreaterThan(
       finalLayerIndex("poster-lighthouse-label")
     );
+  });
+
+  it("places the building outline after later buildings when a boundary appears first", async () => {
+    const invertedStyle = cloneOpenFreeMapStyle();
+    invertedStyle.layers = [
+      { id: "background", type: "background" },
+      {
+        id: "road",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "transportation"
+      },
+      {
+        id: "admin-boundary-early",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "boundary"
+      },
+      {
+        id: "building-late",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "building"
+      },
+      {
+        id: "admin-boundary-late",
+        type: "line",
+        source: "openmaptiles",
+        "source-layer": "boundary"
+      },
+      {
+        id: "place-label",
+        type: "symbol",
+        source: "openmaptiles",
+        "source-layer": "place",
+        layout: { "text-field": ["get", "name"] }
+      }
+    ];
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(invertedStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const finalLayerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+
+    expect(finalLayerIndex("admin-boundary-early")).toBeLessThan(finalLayerIndex("building-late"));
+    expect(finalLayerIndex("poster-building-outline")).toBe(finalLayerIndex("building-late") + 1);
+    expect(finalLayerIndex("admin-boundary-late")).toBe(
+      finalLayerIndex("poster-building-outline") + 1
+    );
+    expect(finalLayerIndex("poster-park-label")).toBe(finalLayerIndex("admin-boundary-late") + 1);
   });
 
   it("uses the administrative tier as the transport ceiling without building geometry", async () => {
