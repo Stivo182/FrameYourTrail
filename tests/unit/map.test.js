@@ -205,6 +205,21 @@ function createLandcoverFillFixture(id, propertyName, propertyValue) {
   };
 }
 
+const NATIVE_LANDUSE_CLASS_FIXTURES = [
+  ["landuse_residential", "residential"],
+  ["landuse_pitch", "pitch"],
+  ["landuse_track", "track"],
+  ["landuse_cemetery", "cemetery"],
+  ["landuse_hospital", "hospital"],
+  ["landuse_school", "school"],
+  ["missing-landuse-suburb", "suburb"],
+  ["missing-landuse-retail", "retail"],
+  ["missing-landuse-military", "military"],
+  ["missing-landuse-bus-station", "bus_station"],
+  ["missing-landuse-zoo", "zoo"],
+  ["missing-landuse-quarry", "quarry"]
+];
+
 const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
     id: "poster-landuse-residential",
@@ -288,18 +303,9 @@ const openFreeMapStyle = {
         "fill-outline-color": "#38761d"
       }
     },
-    createLanduseFillFixture("landuse_residential", "residential"),
-    createLanduseFillFixture("landuse_pitch", "pitch"),
-    createLanduseFillFixture("landuse_track", "track"),
-    createLanduseFillFixture("landuse_cemetery", "cemetery"),
-    createLanduseFillFixture("landuse_hospital", "hospital"),
-    createLanduseFillFixture("landuse_school", "school"),
-    createLanduseFillFixture("missing-landuse-suburb", "suburb"),
-    createLanduseFillFixture("missing-landuse-retail", "retail"),
-    createLanduseFillFixture("missing-landuse-military", "military"),
-    createLanduseFillFixture("missing-landuse-bus-station", "bus_station"),
-    createLanduseFillFixture("missing-landuse-zoo", "zoo"),
-    createLanduseFillFixture("missing-landuse-quarry", "quarry"),
+    ...NATIVE_LANDUSE_CLASS_FIXTURES.map(([id, classValue]) =>
+      createLanduseFillFixture(id, classValue)
+    ),
     createLanduseFillFixture("unknown-landuse-class", "allotments"),
     {
       id: "mixed-landuse-any",
@@ -412,8 +418,20 @@ const openFreeMapStyle = {
       type: "fill",
       source: "openmaptiles",
       "source-layer": "landcover",
+      minzoom: 12,
+      maxzoom: 18,
+      filter: ["==", ["get", "class"], "wetland"],
+      layout: {
+        visibility: "visible"
+      },
+      metadata: {
+        fixture: "live-wetland"
+      },
       paint: {
-        "fill-pattern": "wetland_bg_11"
+        "fill-antialias": true,
+        "fill-opacity": 0.8,
+        "fill-pattern": "wetland_bg_11",
+        "fill-translate-anchor": "map"
       }
     },
     {
@@ -421,6 +439,15 @@ const openFreeMapStyle = {
       type: "fill",
       source: "openmaptiles",
       "source-layer": "transportation",
+      minzoom: 13,
+      maxzoom: 19,
+      filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+      layout: {
+        visibility: "visible"
+      },
+      metadata: {
+        fixture: "live-pedestrian"
+      },
       paint: {
         "fill-pattern": "pedestrian_polygon"
       }
@@ -445,6 +472,8 @@ const openFreeMapStyle = {
       type: "fill",
       source: "openmaptiles",
       "source-layer": "landcover",
+      minzoom: 9,
+      maxzoom: 15,
       filter: [
         "all",
         ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
@@ -2014,24 +2043,69 @@ describe("map helpers", () => {
         "text-halo-width": 1
       }
     });
-    expect(layerPaint("landcover_wetland-poster-fill")).toEqual({
-      "fill-color": "#d7dfd0"
+    expect.soft(layer("landcover_wetland-poster-fill")).toEqual({
+      id: "landcover_wetland-poster-fill",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "landcover",
+      minzoom: 12,
+      maxzoom: 18,
+      filter: ["==", ["get", "class"], "wetland"],
+      layout: { visibility: "visible" },
+      metadata: { fixture: "live-wetland" },
+      paint: {
+        "fill-antialias": true,
+        "fill-color": "#d7dfd0",
+        "fill-opacity": 0.8,
+        "fill-translate-anchor": "map"
+      }
     });
-    expect(layerPaint("landcover_wetland")).toEqual({
-      "fill-pattern": "wetland_bg_11"
+    expect.soft(layer("landcover_wetland")).toEqual({
+      id: "landcover_wetland",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "landcover",
+      minzoom: 12,
+      maxzoom: 18,
+      filter: ["==", ["get", "class"], "wetland"],
+      layout: { visibility: "visible" },
+      metadata: { fixture: "live-wetland" },
+      paint: {
+        "fill-antialias": true,
+        "fill-opacity": 0.25,
+        "fill-pattern": "wetland_bg_11",
+        "fill-translate-anchor": "map"
+      }
     });
-    expect(layerPaint("road_area_pattern-poster-fill")).toEqual({
-      "fill-color": "#f0eee3"
+    expect.soft(layer("road_area_pattern-poster-fill")).toEqual({
+      id: "road_area_pattern-poster-fill",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      minzoom: 13,
+      maxzoom: 19,
+      filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+      layout: { visibility: "visible" },
+      metadata: { fixture: "live-pedestrian" },
+      paint: { "fill-color": "#f0eee3" }
     });
-    expect(layerPaint("road_area_pattern")).toEqual({
-      "fill-pattern": "pedestrian_polygon"
+    expect.soft(layer("road_area_pattern")).toEqual({
+      id: "road_area_pattern",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "transportation",
+      minzoom: 13,
+      maxzoom: 19,
+      filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+      layout: { visibility: "visible" },
+      metadata: { fixture: "live-pedestrian" },
+      paint: {
+        "fill-opacity": 0.25,
+        "fill-pattern": "pedestrian_polygon"
+      }
     });
-    expect(layerIndex("landcover_wetland-poster-fill")).toBeLessThan(
-      layerIndex("landcover_wetland")
-    );
-    expect(layerIndex("road_area_pattern-poster-fill")).toBeLessThan(
-      layerIndex("road_area_pattern")
-    );
+    expect(layerIndex("landcover_wetland-poster-fill") + 1).toBe(layerIndex("landcover_wetland"));
+    expect(layerIndex("road_area_pattern-poster-fill") + 1).toBe(layerIndex("road_area_pattern"));
     expect(layer("landcover_scrub_pattern-poster-fill")).toBeUndefined();
     expect(layerPaint("landcover_scrub_pattern")).toEqual({
       "fill-color": "#d7dfd0"
@@ -2152,12 +2226,22 @@ describe("map helpers", () => {
     expect(layerPaint("landcover-residential-decoy")?.["fill-color"]).toBe("#d7dfd0");
   });
 
-  it("covers each OpenMapTiles landuse class exactly once with ordered supplemental fills", async () => {
+  it("supplements only landuse class values missing from native fill coverage", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const nativeClassValues = new Set(
+      NATIVE_LANDUSE_CLASS_FIXTURES.map(([, classValue]) => classValue)
+    );
+    const expectedGroups = EXPECTED_LANDUSE_AREA_GROUPS.flatMap((group) => {
+      const residualClasses = group.classes.filter(
+        (classValue) => !nativeClassValues.has(classValue)
+      );
+
+      return residualClasses.length === 0 ? [] : [{ ...group, classes: residualClasses }];
+    });
     const supplementalLayers = style.layers.filter(
       (styleLayer) =>
         styleLayer.type === "fill" &&
@@ -2166,37 +2250,10 @@ describe("map helpers", () => {
     );
 
     expect(supplementalLayers.map((styleLayer) => styleLayer.id)).toEqual(
-      EXPECTED_LANDUSE_AREA_GROUPS.map((group) => group.id)
+      expectedGroups.map((group) => group.id)
     );
 
-    const actualCoverage = supplementalLayers.flatMap((styleLayer) => {
-      if (!("filter" in styleLayer) || !Array.isArray(styleLayer.filter)) {
-        return [];
-      }
-
-      const filter = /** @type {unknown[]} */ (styleLayer.filter);
-      const classValues =
-        filter[0] === "==" ? [String(filter[2])] : Array.isArray(filter[2]) ? filter[2] : [];
-
-      return classValues.map((classValue) => ({
-        classValue,
-        groupId: styleLayer.id,
-        color: styleLayer.paint?.["fill-color"]
-      }));
-    });
-    const expectedCoverage = EXPECTED_LANDUSE_AREA_GROUPS.flatMap((group) =>
-      group.classes.map((classValue) => ({
-        classValue,
-        groupId: group.id,
-        color: group.color
-      }))
-    );
-
-    expect(actualCoverage).toEqual(expectedCoverage);
-    expect(actualCoverage).toHaveLength(26);
-    expect(new Set(actualCoverage.map(({ classValue }) => classValue)).size).toBe(26);
-
-    for (const group of EXPECTED_LANDUSE_AREA_GROUPS) {
+    for (const group of expectedGroups) {
       expect(layer(group.id)).toMatchObject({
         type: "fill",
         source: "openmaptiles",
@@ -2207,16 +2264,238 @@ describe("map helpers", () => {
             : ["match", ["get", "class"], group.classes, true, false],
         paint: { "fill-color": group.color }
       });
-      expect(layerIndex(group.id)).toBeGreaterThan(layerIndex("aeroway_fill"));
-      expect(layerIndex(group.id)).toBeLessThan(layerIndex("aeroway_gate"));
+      expect(layerIndex(group.id)).toBeLessThan(layerIndex("landcover-residential-decoy"));
       expect(layerIndex(group.id)).toBeLessThan(layerIndex("water"));
       expect(layerIndex(group.id)).toBeLessThan(layerIndex("road-minor"));
       expect(layerIndex(group.id)).toBeLessThan(layerIndex("building"));
       expect(layerIndex(group.id)).toBeLessThan(layerIndex("place-label"));
     }
+
+    expect(layer("poster-landuse-quarry")).toBeUndefined();
   });
 
-  it("classifies aeroway polygons source-wide and adds a polygon-only supplemental fill", async () => {
+  it("extracts only unambiguous positive native class coverage", async () => {
+    const coverageStyle = cloneOpenFreeMapStyle();
+    coverageStyle.layers = coverageStyle.layers.filter(
+      (styleLayer) => !(styleLayer.type === "fill" && styleLayer["source-layer"] === "landuse")
+    );
+    coverageStyle.layers.splice(
+      2,
+      0,
+      {
+        id: "native-residential-limited",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        minzoom: 10,
+        maxzoom: 12,
+        filter: ["==", ["get", "class"], "residential"],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-suburb-reversed",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", "suburb", ["get", "class"]],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-commercial-group",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["match", ["get", "class"], ["commercial", "retail"], true, false],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-industrial-any-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: [
+          "any",
+          ["==", ["get", "class"], "industrial"],
+          ["==", ["get", "class"], "garages"]
+        ],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-railway-negative-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["!=", ["get", "class"], "railway"],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-cross-semantic-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["match", ["get", "class"], ["military", "school"], true, false],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-nonboolean-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["match", ["get", "class"], "dam", 1, false],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-subclass-only-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "subclass"], "quarry"],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "foreign-quarter-decoy",
+        type: "fill",
+        source: "foreign-tiles",
+        "source-layer": "landuse",
+        filter: ["==", ["get", "class"], "quarter"],
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-conjunctive-decoy",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        filter: [
+          "all",
+          ["==", ["get", "class"], "quarter"],
+          ["==", ["get", "class"], "neighbourhood"]
+        ],
+        paint: { "fill-color": "#ffffff" }
+      }
+    );
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(coverageStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerFilter = (id) => {
+      const styleLayer = layer(id);
+
+      return styleLayer && "filter" in styleLayer ? styleLayer.filter : undefined;
+    };
+
+    expect(layer("native-residential-limited")).toMatchObject({ minzoom: 10, maxzoom: 12 });
+    expect(layerFilter("poster-landuse-residential")).toEqual([
+      "match",
+      ["get", "class"],
+      ["quarter", "neighbourhood"],
+      true,
+      false
+    ]);
+    expect(layer("poster-landuse-commercial")).toBeUndefined();
+    expect(layerFilter("poster-landuse-industrial")).toEqual([
+      "match",
+      ["get", "class"],
+      ["industrial", "garages", "railway", "military", "dam"],
+      true,
+      false
+    ]);
+    expect(layerFilter("poster-landuse-civic")).toEqual([
+      "match",
+      ["get", "class"],
+      ["bus_station", "university", "kindergarten", "college", "library", "hospital", "school"],
+      true,
+      false
+    ]);
+    expect(layerFilter("poster-landuse-quarry")).toEqual(["==", ["get", "class"], "quarry"]);
+  });
+
+  it("composes supplemental areas at their native semantic tiers", async () => {
+    const liveLikeStyle = cloneOpenFreeMapStyle();
+    const nativeLayer = (id) => liveLikeStyle.layers.find((styleLayer) => styleLayer.id === id);
+    liveLikeStyle.layers = [
+      nativeLayer("background"),
+      createLanduseFillFixture("native-landuse-residential", "residential"),
+      {
+        id: "native-landuse-generic",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landuse",
+        paint: { "fill-color": "#ffffff" }
+      },
+      {
+        id: "native-landcover-generic",
+        type: "fill",
+        source: "openmaptiles",
+        "source-layer": "landcover",
+        filter: ["==", ["get", "class"], "grass"],
+        paint: { "fill-color": "#ffffff" }
+      },
+      nativeLayer("landcover_wetland"),
+      nativeLayer("aeroway-runway"),
+      nativeLayer("aeroway-taxiway"),
+      nativeLayer("water"),
+      nativeLayer("road-minor"),
+      nativeLayer("building"),
+      nativeLayer("place-label")
+    ];
+
+    const style = await loadMapStyle("openfreemap_poster", {
+      fetcher: vi.fn(
+        async () =>
+          new Response(JSON.stringify(liveLikeStyle), {
+            headers: { "Content-Type": "application/json" }
+          })
+      )
+    });
+    const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
+    const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
+    const supplementalLanduseIds = EXPECTED_LANDUSE_AREA_GROUPS.map((group) => group.id);
+    const supplementalLandcoverIds = [
+      "poster-landcover-sand",
+      "poster-landcover-rock",
+      "poster-landcover-farmland"
+    ];
+    const supplementalAreaIds = [
+      ...supplementalLanduseIds,
+      ...supplementalLandcoverIds,
+      "poster-aeroway-fill"
+    ];
+
+    expect(Math.max(...supplementalLanduseIds.map(layerIndex))).toBeLessThan(
+      layerIndex("native-landcover-generic")
+    );
+    expect(layerIndex("native-landcover-generic")).toBeLessThan(
+      Math.min(...supplementalLandcoverIds.map(layerIndex))
+    );
+    expect(Math.max(...supplementalLandcoverIds.map(layerIndex)) + 1).toBe(
+      layerIndex("landcover_wetland-poster-fill")
+    );
+    expect(layerIndex("landcover_wetland-poster-fill") + 1).toBe(layerIndex("landcover_wetland"));
+    expect(layer("poster-aeroway-fill")).toMatchObject({
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "aeroway",
+      filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
+      paint: { "fill-color": "#d5d0c7" }
+    });
+    expect(layerIndex("poster-aeroway-fill") + 1).toBe(layerIndex("aeroway-runway"));
+    expect(layerIndex("aeroway-runway")).toBeLessThan(layerIndex("aeroway-taxiway"));
+
+    for (const areaLayerId of supplementalAreaIds) {
+      expect(layerIndex(areaLayerId)).toBeLessThan(layerIndex("water"));
+      expect(layerIndex(areaLayerId)).toBeLessThan(layerIndex("road-minor"));
+      expect(layerIndex(areaLayerId)).toBeLessThan(layerIndex("building"));
+      expect(layerIndex(areaLayerId)).toBeLessThan(layerIndex("place-label"));
+    }
+  });
+
+  it("treats a native aeroway fill and its zoom policy as authoritative", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
@@ -2225,25 +2504,15 @@ describe("map helpers", () => {
 
     expect(layer("aeroway_fill")).toMatchObject({
       "source-layer": "aeroway",
+      minzoom: 11,
       filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
       paint: {
         "fill-color": "#d5d0c7",
         "fill-opacity": 0.7
       }
     });
-    expect(layer("poster-aeroway-fill")).toMatchObject({
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "aeroway",
-      filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
-      paint: { "fill-color": "#d5d0c7" }
-    });
-    expect(layerIndex("poster-aeroway-fill")).toBeGreaterThan(layerIndex("aeroway_fill"));
-    expect(layerIndex("poster-aeroway-fill")).toBeLessThan(layerIndex("aeroway_gate"));
-    expect(layerIndex("poster-aeroway-fill")).toBeLessThan(layerIndex("water"));
-    expect(layerIndex("poster-aeroway-fill")).toBeLessThan(layerIndex("road-minor"));
-    expect(layerIndex("poster-aeroway-fill")).toBeLessThan(layerIndex("building"));
-    expect(layerIndex("poster-aeroway-fill")).toBeLessThan(layerIndex("place-label"));
+    expect(layer("poster-aeroway-fill")).toBeUndefined();
+    expect(layerIndex("aeroway_fill")).toBeLessThan(layerIndex("aeroway_gate"));
     expect(layer("aeroway_gate")).toMatchObject({
       type: "symbol",
       filter: ["==", ["get", "class"], "gate"],
@@ -2253,25 +2522,18 @@ describe("map helpers", () => {
     expect(layer("aeroway-taxiway")?.paint?.["line-color"]).toBe("#ddd5c5");
   });
 
-  it("adds schema-backed natural area fills below water and map detail layers", async () => {
+  it("supplements only natural area class values missing from native fill coverage", async () => {
     const style = await loadMapStyle("openfreemap_poster", {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layer = (id) => style.layers.find((styleLayer) => styleLayer.id === id);
     const layerIndex = (id) => style.layers.findIndex((styleLayer) => styleLayer.id === id);
     const expectedFilters = {
-      "poster-landcover-sand": ["==", ["get", "class"], "sand"],
-      "poster-landcover-rock": ["==", ["get", "class"], "rock"],
-      "poster-landcover-farmland": ["==", ["get", "class"], "farmland"]
+      "poster-landcover-rock": ["==", ["get", "class"], "rock"]
     };
 
-    expect(layer("poster-landcover-sand")).toMatchObject({
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "landcover",
-      filter: expectedFilters["poster-landcover-sand"],
-      paint: { "fill-color": "#e8ddbf" }
-    });
+    expect(layer("natural-area-a")).toMatchObject({ minzoom: 9, maxzoom: 15 });
+    expect(layer("poster-landcover-sand")).toBeUndefined();
     expect(layer("poster-landcover-rock")).toMatchObject({
       type: "fill",
       source: "openmaptiles",
@@ -2279,13 +2541,7 @@ describe("map helpers", () => {
       filter: expectedFilters["poster-landcover-rock"],
       paint: { "fill-color": "#d2d0c7" }
     });
-    expect(layer("poster-landcover-farmland")).toMatchObject({
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "landcover",
-      filter: expectedFilters["poster-landcover-farmland"],
-      paint: { "fill-color": "#d8d8b5" }
-    });
+    expect(layer("poster-landcover-farmland")).toBeUndefined();
 
     for (const areaLayerId of Object.keys(expectedFilters)) {
       expect(layerIndex(areaLayerId)).toBeGreaterThan(layerIndex("background"));

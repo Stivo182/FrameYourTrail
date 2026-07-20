@@ -583,8 +583,9 @@ Map requirements:
   OpenFreeMap exposes the underlying vector data; building fills and outlines
   use enough contrast to remain visible at source zooms that include buildings
 - where OpenFreeMap's current OpenMapTiles source exposes the corresponding
-  area data, the default style keeps the `ice` class and `glacier`/`ice_shelf`
-  subclasses, sand/beach/dune,
+  area data, native fill coverage and zoom policy are authoritative, and
+  supplemental fills cover only missing semantic class gaps; the default style
+  keeps the `ice` class and `glacier`/`ice_shelf` subclasses, sand/beach/dune,
   rock/`bare_rock`/scree, the farmland group (`farmland`, `farm`, `orchard`,
   `vineyard`, and `plant_nursery`), and aeroway polygons distinct from park and
   generic landcover fills; all current OpenMapTiles landuse areas receive
@@ -592,8 +593,8 @@ Map requirements:
   commercial/retail, industrial/infrastructure, civic/education/health,
   recreation/cemetery, and quarry
 - selected OpenFreeMap fill patterns, including wetland and pedestrian-area
-  patterns, are preserved as detail overlays above poster-colored base fills
-  when they improve map detail
+  patterns, are preserved as restrained-opacity detail overlays above
+  poster-colored base fills when they improve map detail
 - unrelated external fill patterns and external fill outlines are neutralized
   or removed, and external park or aeroway line patterns use the poster palette
 - white route halo

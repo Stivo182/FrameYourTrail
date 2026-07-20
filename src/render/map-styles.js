@@ -139,6 +139,7 @@ const POSTER_AREA_DEFINITIONS = Object.freeze([
 ]);
 
 const POSTER_BACKGROUND_MAP_PATTERN_LAYER_IDS = new Set(["landcover_wetland", "road_area_pattern"]);
+const POSTER_BACKGROUND_MAP_PATTERN_OVERLAY_OPACITY = 0.25;
 
 const SUPPLEMENTAL_POSTER_AREA_BARRIER_SOURCE_LAYERS = new Set([
   "water",
@@ -809,25 +810,39 @@ function isMapSourceGeometryLayer(layer, sourceLayer) {
  * @param {(sourceLayer: string) => string | undefined} resolveSource
  */
 function insertSupplementalPosterAreaLayers(layers, resolveSource) {
-  const barrierSearchStartIndex =
-    layers.findLastIndex((layer) => getLayerType(layer) === "background") + 1;
-  const barrierOffset = layers
-    .slice(barrierSearchStartIndex)
-    .findIndex(isSupplementalPosterAreaBarrierLayer);
-  const insertionIndex =
-    barrierOffset === -1 ? layers.length : barrierSearchStartIndex + barrierOffset;
+  const supplementalLayers = createSupplementalPosterAreaLayers(layers, resolveSource);
+  const layersBySourceLayer = new Map();
 
-  return [
-    ...layers.slice(0, insertionIndex),
-    ...createSupplementalPosterAreaLayers(resolveSource),
-    ...layers.slice(insertionIndex)
-  ];
+  for (const layer of supplementalLayers) {
+    const sourceLayer = layer["source-layer"];
+    const sourceLayerLayers = layersBySourceLayer.get(sourceLayer) ?? [];
+    sourceLayerLayers.push(layer);
+    layersBySourceLayer.set(sourceLayer, sourceLayerLayers);
+  }
+
+  let composedLayers = layers;
+
+  for (const [sourceLayer, sourceLayerLayers] of layersBySourceLayer) {
+    const insertionIndex = getSupplementalPosterAreaInsertionIndex(
+      composedLayers,
+      sourceLayer,
+      resolveSource
+    );
+    composedLayers = [
+      ...composedLayers.slice(0, insertionIndex),
+      ...sourceLayerLayers,
+      ...composedLayers.slice(insertionIndex)
+    ];
+  }
+
+  return composedLayers;
 }
 
 /**
+ * @param {unknown[]} layers
  * @param {(sourceLayer: string) => string | undefined} resolveSource
  */
-function createSupplementalPosterAreaLayers(resolveSource) {
+function createSupplementalPosterAreaLayers(layers, resolveSource) {
   return POSTER_AREA_DEFINITIONS.flatMap((definition) => {
     if (!("supplementalLayerId" in definition)) {
       return [];
@@ -839,22 +854,188 @@ function createSupplementalPosterAreaLayers(resolveSource) {
       return [];
     }
 
+    let filter;
+
+    if (definition.classification === "positive-filter") {
+      const coveredClassValues = getNativePosterAreaClassCoverage(layers, source, definition);
+      const residualClassValues = definition.classValues.filter(
+        (classValue) => !coveredClassValues.has(classValue)
+      );
+
+      if (residualClassValues.length === 0) {
+        return [];
+      }
+
+      filter = createPositivePropertyFilter("class", residualClassValues);
+    } else {
+      if (hasNativePosterAreaFillCoverage(layers, source, definition.sourceLayer)) {
+        return [];
+      }
+
+      filter = definition.supplementalFilter;
+    }
+
     return [
       {
         id: definition.supplementalLayerId,
         type: "fill",
         source,
         "source-layer": definition.sourceLayer,
-        filter:
-          "supplementalFilter" in definition
-            ? definition.supplementalFilter
-            : createPositivePropertyFilter("class", definition.classValues),
+        filter,
         paint: {
           "fill-color": definition.color
         }
       }
     ];
   });
+}
+
+/**
+ * @param {unknown[]} layers
+ * @param {string} source
+ * @param {(typeof POSTER_AREA_DEFINITIONS)[number]} definition
+ */
+function getNativePosterAreaClassCoverage(layers, source, definition) {
+  const coveredClassValues = new Set();
+
+  for (const layer of layers) {
+    if (!isResolvedSourceFillLayer(layer, source, definition.sourceLayer)) {
+      continue;
+    }
+
+    const layerObject = /** @type {{ filter?: unknown }} */ (layer);
+    const classValues = getPositiveFilterPropertyValues(layerObject.filter, "class");
+
+    if (
+      classValues &&
+      getPositiveFilterAreaDefinition(definition.sourceLayer, "class", classValues) === definition
+    ) {
+      for (const classValue of classValues) {
+        coveredClassValues.add(classValue);
+      }
+    }
+  }
+
+  return coveredClassValues;
+}
+
+/**
+ * @param {unknown[]} layers
+ * @param {string} source
+ * @param {string} sourceLayer
+ */
+function hasNativePosterAreaFillCoverage(layers, source, sourceLayer) {
+  return layers.some((layer) => isResolvedSourceFillLayer(layer, source, sourceLayer));
+}
+
+/**
+ * @param {unknown} layer
+ * @param {string} source
+ * @param {string} sourceLayer
+ */
+function isResolvedSourceFillLayer(layer, source, sourceLayer) {
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    return false;
+  }
+
+  const layerObject = /** @type {{ source?: unknown, "source-layer"?: unknown }} */ (layer);
+
+  return (
+    getLayerType(layer) === "fill" &&
+    layerObject.source === source &&
+    layerObject["source-layer"] === sourceLayer
+  );
+}
+
+/**
+ * @param {unknown[]} layers
+ * @param {string} sourceLayer
+ * @param {(sourceLayer: string) => string | undefined} resolveSource
+ */
+function getSupplementalPosterAreaInsertionIndex(layers, sourceLayer, resolveSource) {
+  const barrierIndex = getSupplementalPosterAreaBarrierIndex(layers);
+
+  if (sourceLayer === "landuse") {
+    const landcoverSource = resolveSource("landcover");
+    const firstLandcoverIndex = layers.findIndex(
+      (layer) =>
+        landcoverSource !== undefined &&
+        isResolvedSourceFillLayer(layer, landcoverSource, "landcover")
+    );
+
+    return firstLandcoverIndex === -1 ? barrierIndex : Math.min(firstLandcoverIndex, barrierIndex);
+  }
+
+  const source = resolveSource(sourceLayer);
+
+  if (sourceLayer === "landcover" && source !== undefined) {
+    const wetlandBaseIndex = layers.findIndex(
+      (layer) =>
+        isLayerWithId(layer, "landcover_wetland-poster-fill") &&
+        isResolvedSourceFillLayer(layer, source, sourceLayer)
+    );
+
+    if (wetlandBaseIndex !== -1 && wetlandBaseIndex < barrierIndex) {
+      return wetlandBaseIndex;
+    }
+
+    const finalLandcoverIndex = layers
+      .slice(0, barrierIndex)
+      .findLastIndex((layer) => isResolvedSourceFillLayer(layer, source, sourceLayer));
+
+    return finalLandcoverIndex === -1 ? barrierIndex : finalLandcoverIndex + 1;
+  }
+
+  if (sourceLayer === "aeroway" && source !== undefined) {
+    const firstAerowayIndex = layers.findIndex((layer) =>
+      isResolvedSourceLayer(layer, source, sourceLayer)
+    );
+
+    return firstAerowayIndex === -1 ? barrierIndex : Math.min(firstAerowayIndex, barrierIndex);
+  }
+
+  return barrierIndex;
+}
+
+/**
+ * @param {unknown[]} layers
+ */
+function getSupplementalPosterAreaBarrierIndex(layers) {
+  const searchStartIndex =
+    layers.findLastIndex((layer) => getLayerType(layer) === "background") + 1;
+  const barrierOffset = layers
+    .slice(searchStartIndex)
+    .findIndex(isSupplementalPosterAreaBarrierLayer);
+
+  return barrierOffset === -1 ? layers.length : searchStartIndex + barrierOffset;
+}
+
+/**
+ * @param {unknown} layer
+ * @param {string} source
+ * @param {string} sourceLayer
+ */
+function isResolvedSourceLayer(layer, source, sourceLayer) {
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    return false;
+  }
+
+  const layerObject = /** @type {{ source?: unknown, "source-layer"?: unknown }} */ (layer);
+
+  return layerObject.source === source && layerObject["source-layer"] === sourceLayer;
+}
+
+/**
+ * @param {unknown} layer
+ * @param {string} id
+ */
+function isLayerWithId(layer, id) {
+  return (
+    layer !== null &&
+    typeof layer === "object" &&
+    !Array.isArray(layer) &&
+    /** @type {{ id?: unknown }} */ (layer).id === id
+  );
 }
 
 /**
@@ -1171,6 +1352,7 @@ function createPosterFillPatternLayers(layer, layerId, posterFillPaint, fillPatt
       : {};
 
   paint["fill-pattern"] = fillPattern;
+  paint["fill-opacity"] = POSTER_BACKGROUND_MAP_PATTERN_OVERLAY_OPACITY;
   delete paint["fill-color"];
   delete paint["fill-outline-color"];
 
@@ -1279,15 +1461,48 @@ function getPosterLineColor(layerKey) {
  * @param {unknown} filter
  */
 function getPosterAreaDefinition(sourceLayer, filter) {
+  const sourceLayerDefinition = POSTER_AREA_DEFINITIONS.find(
+    (definition) =>
+      definition.sourceLayer === sourceLayer && definition.classification === "source-layer"
+  );
+
+  if (sourceLayerDefinition) {
+    return sourceLayerDefinition;
+  }
+
+  for (const propertyName of /** @type {const} */ (["class", "subclass"])) {
+    const propertyValues = getPositiveFilterPropertyValues(filter, propertyName);
+    const definition =
+      propertyValues && getPositiveFilterAreaDefinition(sourceLayer, propertyName, propertyValues);
+
+    if (definition) {
+      return definition;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * @param {string} sourceLayer
+ * @param {"class" | "subclass"} propertyName
+ * @param {readonly string[]} propertyValues
+ */
+function getPositiveFilterAreaDefinition(sourceLayer, propertyName, propertyValues) {
+  if (propertyValues.length === 0) {
+    return undefined;
+  }
+
+  const definitionValuesKey = propertyName === "class" ? "classValues" : "subclassValues";
+
   return POSTER_AREA_DEFINITIONS.find(
     (definition) =>
       definition.sourceLayer === sourceLayer &&
-      (definition.classification === "source-layer" ||
-        (definition.classification === "positive-filter" &&
-          (("classValues" in definition &&
-            hasPositiveFilterPropertyValue(filter, "class", definition.classValues)) ||
-            ("subclassValues" in definition &&
-              hasPositiveFilterPropertyValue(filter, "subclass", definition.subclassValues)))))
+      definition.classification === "positive-filter" &&
+      definitionValuesKey in definition &&
+      propertyValues.every((propertyValue) =>
+        definition[definitionValuesKey].includes(propertyValue)
+      )
   );
 }
 
@@ -1354,75 +1569,93 @@ function createPositivePropertyFilter(propertyName, values) {
 /**
  * @param {unknown} expression
  * @param {"class" | "subclass"} propertyName
- * @param {readonly string[]} values
+ * @returns {string[] | null}
  */
-function hasPositiveFilterPropertyValue(expression, propertyName, values) {
+function getPositiveFilterPropertyValues(expression, propertyName) {
   if (!Array.isArray(expression) || expression.length === 0) {
-    return false;
+    return [];
   }
 
   const operator = expression[0];
 
   if (operator === "all") {
-    return expression
-      .slice(1)
-      .some((operand) => hasPositiveFilterPropertyValue(operand, propertyName, values));
+    /** @type {Set<string> | null} */
+    let propertyValues = null;
+
+    for (const operand of expression.slice(1)) {
+      const operandValues = getPositiveFilterPropertyValues(operand, propertyName);
+
+      if (operandValues === null) {
+        return null;
+      }
+
+      if (operandValues.length === 0) {
+        continue;
+      }
+
+      if (propertyValues === null) {
+        propertyValues = new Set(operandValues);
+        continue;
+      }
+
+      for (const propertyValue of propertyValues) {
+        if (!operandValues.includes(propertyValue)) {
+          propertyValues.delete(propertyValue);
+        }
+      }
+    }
+
+    return propertyValues === null ? [] : [...propertyValues];
   }
 
   if (operator === "any") {
-    return false;
+    return null;
   }
 
   if (operator === "==" && expression.length === 3) {
     const leftProperty = getFilterPropertyName(expression[1]);
     const rightProperty = getFilterPropertyName(expression[2]);
 
-    return (
-      (leftProperty === propertyName &&
-        typeof expression[2] === "string" &&
-        values.includes(expression[2])) ||
-      (rightProperty === propertyName &&
-        typeof expression[1] === "string" &&
-        values.includes(expression[1]))
-    );
+    if (leftProperty === propertyName) {
+      return typeof expression[2] === "string" ? [expression[2]] : null;
+    }
+
+    if (rightProperty === propertyName) {
+      return typeof expression[1] === "string" ? [expression[1]] : null;
+    }
+
+    return expressionContainsGet(expression, propertyName) ? null : [];
   }
 
-  if (
-    operator !== "match" ||
-    expression.length < 5 ||
-    expression.length % 2 === 0 ||
-    expression.at(-1) !== false ||
-    getFilterPropertyName(expression[1]) !== propertyName
-  ) {
-    return false;
+  if (operator !== "match" || getFilterPropertyName(expression[1]) !== propertyName) {
+    return expressionContainsGet(expression, propertyName) ? null : [];
   }
 
-  let hasPositiveBranch = false;
+  if (expression.length < 5 || expression.length % 2 === 0 || expression.at(-1) !== false) {
+    return null;
+  }
+
+  const propertyValues = new Set();
 
   for (let index = 2; index < expression.length - 1; index += 2) {
     const output = expression[index + 1];
 
-    if (output !== true && output !== false) {
-      return false;
-    }
-
-    if (output === false) {
-      continue;
+    if (output !== true) {
+      return null;
     }
 
     const labels = Array.isArray(expression[index]) ? expression[index] : [expression[index]];
 
-    if (
-      labels.length === 0 ||
-      labels.some((label) => typeof label !== "string" || !values.includes(label))
-    ) {
-      return false;
+    if (labels.length === 0 || labels.some((label) => typeof label !== "string")) {
+      return null;
     }
 
-    hasPositiveBranch = true;
+    for (const label of labels) {
+      propertyValues.add(label);
+    }
   }
 
-  return hasPositiveBranch;
+  return propertyValues.size === 0 ? null : [...propertyValues];
 }
 
 /**
