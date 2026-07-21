@@ -288,7 +288,7 @@ const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
     id: "poster-landuse-recreation",
     classes: ["stadium", "playground", "theme_park", "zoo", "pitch", "track", "cemetery"],
-    color: "#d8dfce"
+    color: "#ECE7D2"
   },
   {
     id: "poster-landuse-quarry",

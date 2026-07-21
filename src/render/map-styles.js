@@ -17,7 +17,7 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   commercial: "#ddcecc",
   industrial: "#F4E2DC",
   civic: "#e4dec7",
-  recreation: "#d8dfce",
+  recreation: "#ECE7D2",
   aerowayArea: "#e4e2e0",
   water: "#d6e3e0",
   waterLine: "#7ba8a8",
