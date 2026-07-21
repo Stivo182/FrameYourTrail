@@ -831,7 +831,14 @@ async function addOpenFreeMapWaterwayDetail(map, style, bounds, labelAnchorId, s
     bounds,
     mapZoom: map.getZoom()
   });
-  const detail = await fetchOpenFreeMapWaterwayDetail({ plan, signal });
+  let detail;
+
+  try {
+    detail = await fetchOpenFreeMapWaterwayDetail({ plan, signal });
+  } catch {
+    throwIfRouteMapAborted(signal);
+    return;
+  }
 
   throwIfRouteMapAborted(signal);
 
@@ -839,20 +846,44 @@ async function addOpenFreeMapWaterwayDetail(map, style, bounds, labelAnchorId, s
     return;
   }
 
-  const layers = createOpenFreeMapWaterwayDetailLayers(style);
+  let sourceId;
+  const addedLayerIds = [];
 
-  if (!layers) {
-    return;
-  }
+  try {
+    const layers = createOpenFreeMapWaterwayDetailLayers(style);
 
-  map.addSource(layers.sourceId, {
-    type: "geojson",
-    data: /** @type {import("maplibre-gl").GeoJSONSourceSpecification["data"]} */ (detail)
-  });
-  map.addLayer(layers.line, "route-line-halo");
+    if (!layers) {
+      return;
+    }
 
-  if (labelAnchorId) {
-    map.addLayer(layers.label, labelAnchorId);
+    sourceId = layers.sourceId;
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: /** @type {import("maplibre-gl").GeoJSONSourceSpecification["data"]} */ (detail)
+    });
+    map.addLayer(layers.line, "route-line-halo");
+    addedLayerIds.push(layers.line.id);
+
+    if (labelAnchorId) {
+      map.addLayer(layers.label, labelAnchorId);
+      addedLayerIds.push(layers.label.id);
+    }
+  } catch {
+    for (const layerId of addedLayerIds.reverse()) {
+      try {
+        map.removeLayer(layerId);
+      } catch {
+        // Detail overlay cleanup is best-effort too.
+      }
+    }
+
+    if (sourceId) {
+      try {
+        map.removeSource(sourceId);
+      } catch {
+        // Detail overlay cleanup is best-effort too.
+      }
+    }
   }
 }
 

@@ -25,9 +25,9 @@ export function createOpenFreeMapWaterwayDetailPlan(options) {
   }
 
   const tileJsonUrl = getWaterwayTileJsonUrl(style);
-  const tiles = getCoveringTiles(bounds, WATERWAY_DETAIL_ZOOM);
+  const tiles = getCoveringTiles(bounds, WATERWAY_DETAIL_ZOOM, maxTileCount);
 
-  if (!tileJsonUrl || !tiles || tiles.length > maxTileCount) {
+  if (!tileJsonUrl || !tiles) {
     return null;
   }
 
@@ -188,9 +188,14 @@ function getWaterwayTileJsonUrl(style) {
 /**
  * @param {unknown} bounds
  * @param {number} zoom
+ * @param {number} maxTileCount
  */
-function getCoveringTiles(bounds, zoom) {
+function getCoveringTiles(bounds, zoom, maxTileCount) {
   if (!bounds || typeof bounds !== "object" || Array.isArray(bounds)) {
+    return null;
+  }
+
+  if (!Number.isInteger(maxTileCount) || maxTileCount < 1) {
     return null;
   }
 
@@ -223,6 +228,12 @@ function getCoveringTiles(bounds, zoom) {
   const maxX = longitudeToTileX(maxLongitude, tilesPerAxis);
   const minY = latitudeToTileY(maxLatitude, tilesPerAxis);
   const maxY = latitudeToTileY(minLatitude, tilesPerAxis);
+  const tileCount = (maxX - minX + 1) * (maxY - minY + 1);
+
+  if (tileCount > maxTileCount) {
+    return null;
+  }
+
   const tiles = [];
 
   for (let y = minY; y <= maxY; y += 1) {
@@ -310,8 +321,20 @@ function expandTileTemplate(template, tile) {
  */
 function fetchWithTimeout(url, fetcher, signal, timeoutMs) {
   const controller = new AbortController();
-  const abort = () => controller.abort();
-  signal?.addEventListener("abort", abort, { once: true });
+  /** @type {() => void} */
+  let abort = () => {};
+  const abortPromise = new Promise((_, reject) => {
+    abort = () => {
+      controller.abort();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    if (signal?.aborted) {
+      abort();
+    } else {
+      signal?.addEventListener("abort", abort, { once: true });
+    }
+  });
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timeout;
   const timeoutPromise = new Promise((_, reject) => {
@@ -321,7 +344,11 @@ function fetchWithTimeout(url, fetcher, signal, timeoutMs) {
     }, timeoutMs);
   });
 
-  return Promise.race([fetcher(url, { signal: controller.signal }), timeoutPromise]).finally(() => {
+  return Promise.race([
+    fetcher(url, { signal: controller.signal }),
+    timeoutPromise,
+    abortPromise
+  ]).finally(() => {
     if (timeout !== undefined) {
       clearTimeout(timeout);
     }

@@ -1,7 +1,6 @@
 import { featureFilter, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import Pbf from "pbf";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { haversineMeters } from "../../src/core/geo.js";
 import { createI18n } from "../../src/i18n/index.js";
@@ -23,6 +22,7 @@ import {
   initRouteMap,
   renderStaticRouteFallback
 } from "../../src/render/map.js";
+import { createWaterwayVectorTile } from "../helpers/vector-tile.js";
 
 const maplibreMock = vi.hoisted(() => {
   /** @type {any[]} */
@@ -32,6 +32,8 @@ const maplibreMock = vi.hoisted(() => {
   let autoResolveEvents = true;
   let initialLoaded = false;
   let fitBoundsZoom = 0;
+  let addSourceFailureId;
+  let addLayerFailureId;
   /** @type {(bounds: any, options: any) => any} */
   let cameraForBoundsResolver = () => undefined;
   const Map = vi.fn((options) => {
@@ -68,9 +70,17 @@ const maplibreMock = vi.hoisted(() => {
         return instance;
       }),
       addSource: vi.fn((id, source) => {
+        if (id === addSourceFailureId) {
+          throw new Error(`Failed to add source: ${id}`);
+        }
+
         instance.sources.set(id, source);
       }),
       addLayer: vi.fn((layer, beforeId) => {
+        if (layer.id === addLayerFailureId) {
+          throw new Error(`Failed to add layer: ${layer.id}`);
+        }
+
         instance.layers.push(layer);
 
         if (beforeId === undefined) {
@@ -87,6 +97,21 @@ const maplibreMock = vi.hoisted(() => {
         }
 
         instance.styleLayers.splice(insertionIndex, 0, layer);
+      }),
+      removeSource: vi.fn((id) => {
+        instance.sources.delete(id);
+      }),
+      removeLayer: vi.fn((id) => {
+        const layerIndex = instance.layers.findIndex((layer) => layer.id === id);
+        const styleLayerIndex = instance.styleLayers.findIndex((layer) => layer.id === id);
+
+        if (layerIndex !== -1) {
+          instance.layers.splice(layerIndex, 1);
+        }
+
+        if (styleLayerIndex !== -1) {
+          instance.styleLayers.splice(styleLayerIndex, 1);
+        }
       }),
       fitBounds: vi.fn(() => {
         currentZoom = fitBoundsZoom;
@@ -128,6 +153,12 @@ const maplibreMock = vi.hoisted(() => {
     },
     setFitBoundsZoom(value) {
       fitBoundsZoom = value;
+    },
+    setAddSourceFailureId(value) {
+      addSourceFailureId = value;
+    },
+    setAddLayerFailureId(value) {
+      addLayerFailureId = value;
     },
     setCameraForBoundsResolver(value) {
       cameraForBoundsResolver = value;
@@ -840,34 +871,6 @@ function createOpenFreeMapStyleResponse() {
   });
 }
 
-function createWaterwayVectorTile() {
-  const pbf = new Pbf();
-  pbf.writeMessage(3, writeWaterwayLayer, undefined);
-  return pbf.finish();
-}
-
-function writeWaterwayLayer(_value, pbf) {
-  pbf.writeVarintField(15, 2);
-  pbf.writeStringField(1, "waterway");
-  pbf.writeStringField(3, "name");
-  pbf.writeStringField(3, "brunnel");
-  pbf.writeMessage(4, writeStringValue, "Tributary");
-  pbf.writeMessage(4, writeStringValue, "tunnel");
-  pbf.writeMessage(2, writeWaterwayFeature, [0, 0]);
-  pbf.writeMessage(2, writeWaterwayFeature, [0, 0, 1, 1]);
-  pbf.writeVarintField(5, 4096);
-}
-
-function writeStringValue(value, pbf) {
-  pbf.writeStringField(1, value);
-}
-
-function writeWaterwayFeature(tags, pbf) {
-  pbf.writePackedVarint(2, tags);
-  pbf.writeVarintField(3, 2);
-  pbf.writePackedVarint(4, [9, 20, 20, 10, 20, 20]);
-}
-
 describe("map helpers", () => {
   beforeEach(() => {
     maplibreMock.instances.length = 0;
@@ -875,6 +878,8 @@ describe("map helpers", () => {
     maplibreMock.setAutoResolveEvents(true);
     maplibreMock.setInitialLoaded(false);
     maplibreMock.setFitBoundsZoom(13);
+    maplibreMock.setAddSourceFailureId(undefined);
+    maplibreMock.setAddLayerFailureId(undefined);
     maplibreMock.setCameraForBoundsResolver(() => undefined);
     maplibreMock.Map.mockClear();
     vi.stubGlobal(
@@ -3231,6 +3236,116 @@ describe("map helpers", () => {
     expect(layerIndex("openfreemap-waterway-detail-label")).toBeLessThan(
       layerIndex("poster-waterway-label")
     );
+  });
+
+  it("promptly cancels a broad route map while a detail fetch ignores abort", async () => {
+    const host = document.createElement("div");
+    const controller = new AbortController();
+    const routePoints = [
+      { latitude: 61.061819, longitude: 150.638698 },
+      { latitude: 61.760921, longitude: 151.762894 }
+    ];
+    const tileData = createWaterwayVectorTile();
+    const fetcher = vi.fn(async (url) => {
+      if (url === "https://tiles.openfreemap.org/planet") {
+        return new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve(
+                new Response(
+                  JSON.stringify({
+                    tiles: ["https://tiles.openfreemap.org/planet/current/{z}/{x}/{y}.pbf"]
+                  })
+                )
+              ),
+            100
+          )
+        );
+      }
+
+      if (url.includes("/planet/current/9/")) {
+        return new Response(Uint8Array.from(tileData).buffer);
+      }
+
+      return createOpenFreeMapStyleResponse();
+    });
+    maplibreMock.setFitBoundsZoom(8.1856);
+    vi.stubGlobal("fetch", fetcher);
+
+    const renderPromise = initRouteMap(host, routePoints, createI18n("en"), [], {
+      signal: controller.signal
+    });
+    await vi.waitFor(() => {
+      expect(fetcher).toHaveBeenCalledWith(
+        "https://tiles.openfreemap.org/planet",
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
+    });
+
+    controller.abort();
+    const promptResult = await Promise.race([
+      renderPromise,
+      new Promise((resolve) => setTimeout(() => resolve({ status: "pending" }), 30))
+    ]);
+    const finalResult = promptResult.status === "pending" ? await renderPromise : promptResult;
+
+    expect(promptResult).toMatchObject({ status: "cancelled" });
+    expect(finalResult).toMatchObject({ status: "cancelled" });
+    expect(host.querySelector(".static-map-fallback")).toBeNull();
+    expect(host.querySelector(".maplibre-host")).toBeNull();
+  });
+
+  it.each([
+    ["source", "openfreemap-waterway-detail"],
+    ["line layer", "openfreemap-waterway-detail-line"],
+    ["label layer", "openfreemap-waterway-detail-label"]
+  ])("keeps detail %s insertion failures best-effort", async (_failureKind, failureId) => {
+    const host = document.createElement("div");
+    const routePoints = [
+      { latitude: 61.061819, longitude: 150.638698 },
+      { latitude: 61.760921, longitude: 151.762894 }
+    ];
+    const tileData = createWaterwayVectorTile();
+    maplibreMock.setFitBoundsZoom(8.1856);
+
+    if (failureId === "openfreemap-waterway-detail") {
+      maplibreMock.setAddSourceFailureId(failureId);
+    } else {
+      maplibreMock.setAddLayerFailureId(failureId);
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        if (url === "https://tiles.openfreemap.org/planet") {
+          return new Response(
+            JSON.stringify({
+              tiles: ["https://tiles.openfreemap.org/planet/current/{z}/{x}/{y}.pbf"]
+            })
+          );
+        }
+
+        if (url.includes("/planet/current/9/")) {
+          return new Response(Uint8Array.from(tileData).buffer);
+        }
+
+        return createOpenFreeMapStyleResponse();
+      })
+    );
+
+    await expect(initRouteMap(host, routePoints, createI18n("en"))).resolves.toMatchObject({
+      status: "ready"
+    });
+
+    const map = maplibreMock.instances[0];
+
+    expect(map.remove).not.toHaveBeenCalled();
+    expect(map.sources.has("openfreemap-waterway-detail")).toBe(false);
+    expect(
+      map.styleLayers.some((layer) => layer.id.startsWith("openfreemap-waterway-detail-"))
+    ).toBe(false);
+    expect(host.querySelector(".static-map-fallback")).toBeNull();
+    expect(host.querySelector(".maplibre-host")).not.toBeNull();
   });
 
   it("nudges near-detail OpenFreeMap route maps at the safe-padding zoom boundary", async () => {
