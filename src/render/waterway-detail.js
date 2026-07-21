@@ -147,13 +147,10 @@ export function createOpenFreeMapWaterwayDetailLayers(style) {
 function createDetailLineLayer(template) {
   const detailLayer = createDetailLayer(template, WATERWAY_DETAIL_LINE_LAYER_ID);
   const nativePaint = detailLayer.paint;
-
-  if (!nativePaint || typeof nativePaint !== "object" || Array.isArray(nativePaint)) {
-    return detailLayer;
-  }
-
-  const paint = { .../** @type {Record<string, unknown>} */ (nativePaint) };
-  const nativeLineWidth = paint["line-width"];
+  const paint =
+    nativePaint && typeof nativePaint === "object" && !Array.isArray(nativePaint)
+      ? { .../** @type {Record<string, unknown>} */ (nativePaint) }
+      : {};
   delete paint["line-dasharray"];
   delete paint["line-gap-width"];
 
@@ -161,10 +158,7 @@ function createDetailLineLayer(template) {
     ...detailLayer,
     paint: {
       ...paint,
-      "line-width":
-        nativeLineWidth === undefined
-          ? WATERWAY_DETAIL_MIN_LINE_WIDTH
-          : ["max", WATERWAY_DETAIL_MIN_LINE_WIDTH, nativeLineWidth]
+      "line-width": WATERWAY_DETAIL_MIN_LINE_WIDTH
     }
   };
 }

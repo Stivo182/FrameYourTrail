@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { describe, expect, it, vi } from "vitest";
 import {
   createOpenFreeMapWaterwayDetailLayers,
@@ -340,7 +341,7 @@ describe("OpenFreeMap waterway detail", () => {
         type: "line",
         source: "openfreemap-waterway-detail",
         layout: { "line-cap": "round" },
-        paint: { "line-color": "#123456", "line-width": ["max", 1.5, 2] }
+        paint: { "line-color": "#123456", "line-width": 1.5 }
       },
       label: {
         id: "openfreemap-waterway-detail-label",
@@ -365,11 +366,7 @@ describe("OpenFreeMap waterway detail", () => {
         paint: {
           "line-color": "#a0c8f0",
           "line-opacity": 0.85,
-          "line-width": [
-            "max",
-            1.5,
-            ["interpolate", ["exponential", 1.2], ["zoom"], 11, 0.5, 20, 6]
-          ]
+          "line-width": 1.5
         }
       },
       label: {
@@ -380,6 +377,45 @@ describe("OpenFreeMap waterway detail", () => {
         paint: { "text-color": "#654321", "text-halo-width": 1 }
       }
     });
+  });
+
+  it("creates MapLibre-valid detail layers from a river template with expression paint", () => {
+    const layers = createOpenFreeMapWaterwayDetailLayers(readTunnelRegressionStyleFixture());
+
+    if (!layers) {
+      throw new Error("Expected waterway detail layers");
+    }
+
+    expect(
+      validateStyleMin({
+        version: 8,
+        sources: {
+          [layers.sourceId]: {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] }
+          }
+        },
+        layers: [layers.line, layers.label]
+      })
+    ).toEqual([]);
+  });
+
+  it("uses the constant width when the river template has no paint", () => {
+    const style = {
+      ...OPENFREEMAP_STYLE,
+      layers: [
+        ...OPENFREEMAP_STYLE.layers,
+        {
+          id: "poster-waterway-label",
+          type: "symbol",
+          source: "openmaptiles",
+          "source-layer": "waterway",
+          layout: { "symbol-placement": "line", "text-field": ["get", "name"] }
+        }
+      ]
+    };
+
+    expect(createOpenFreeMapWaterwayDetailLayers(style)?.line.paint).toEqual({ "line-width": 1.5 });
   });
 
   it("times out a fetch that ignores abort signals without failing the map", async () => {
