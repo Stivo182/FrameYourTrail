@@ -147,6 +147,23 @@ describe("OpenFreeMap waterway detail", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
+  it("times out a TileJSON body that ignores the request signal", async () => {
+    const stalledResponse = new Response();
+    vi.spyOn(stalledResponse, "json").mockImplementation(() => new Promise(() => {}));
+    const fetcher = vi.fn(async () => stalledResponse);
+    const detail = await Promise.race([
+      fetchOpenFreeMapWaterwayDetail({
+        plan: createBakhapchaPlan(),
+        fetcher,
+        timeoutMs: 5
+      }),
+      new Promise((resolve) => setTimeout(() => resolve("timed out"), 25))
+    ]);
+
+    expect(detail).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps decoded named properties from successful tiles when sibling tiles fail", async () => {
     const tileData = createWaterwayVectorTile({
       features: [
@@ -213,6 +230,25 @@ describe("OpenFreeMap waterway detail", () => {
       type: "FeatureCollection",
       features: [{ properties: { name: "Decoded Tributary", class: "stream" } }]
     });
+    expect(fetcher).toHaveBeenCalledTimes(7);
+  });
+
+  it("times out stalled vector-tile bodies without failing the map", async () => {
+    const stalledResponse = new Response();
+    vi.spyOn(stalledResponse, "arrayBuffer").mockImplementation(() => new Promise(() => {}));
+    const fetcher = vi.fn(async (url) =>
+      url === "https://tiles.openfreemap.org/planet" ? createTileJsonResponse() : stalledResponse
+    );
+    const detail = await Promise.race([
+      fetchOpenFreeMapWaterwayDetail({
+        plan: createBakhapchaPlan(),
+        fetcher,
+        timeoutMs: 5
+      }),
+      new Promise((resolve) => setTimeout(() => resolve("timed out"), 25))
+    ]);
+
+    expect(detail).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(7);
   });
 

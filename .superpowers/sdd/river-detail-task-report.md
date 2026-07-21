@@ -157,3 +157,23 @@ Status: DONE
 - Documentation/spec check: no additional product documentation change was
   needed because this validation-only follow-up does not alter the already
   specified overlay behavior.
+
+### Re-review: Response Body Boundaries
+
+- RED: `npm run test -- tests/unit/waterway-detail.test.js -t "TileJSON body|vector-tile bodies"`
+  failed both new regressions with `expected 'timed out' to be null`. The map
+  cancellation regression with a stalled TileJSON `json()` body reached its 5 s
+  test timeout, proving the header-only timeout boundary.
+- Fix: `fetchAndReadWithTimeout` now races one operation that includes both
+  `fetch()` and the caller's full response-body reader. TileJSON `json()` and
+  successful MVT `arrayBuffer()` calls run inside that operation, so timeout and
+  parent abort settle even when a body method ignores the request signal.
+- GREEN: `npm run test -- tests/unit/waterway-detail.test.js` passed 15 tests;
+  `npm run test -- tests/unit/map.test.js -t "adds z9 waterway detail|TileJSON body ignores abort|insertion failures best-effort"`
+  passed 5 tests. The map case proves a parent abort returns `cancelled` with
+  neither a static fallback nor a MapLibre host while TileJSON body consumption
+  remains stalled.
+- Fresh `npm run typecheck`, `npm run lint`, `npm run format:check`, and
+  `git diff --check` passed. No full verification suite was run per controller
+  direction. Documentation/spec check: no product-visible behavior changed, so
+  the existing product spec remains current.

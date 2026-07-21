@@ -61,18 +61,19 @@ export async function fetchOpenFreeMapWaterwayDetail(options) {
       plan.tiles.map(async (tile, index) => {
         try {
           const template = /** @type {string} */ (tileTemplates[index % tileTemplates.length]);
-          const response = await fetchWithTimeout(
+          const { response, body } = await fetchAndReadWithTimeout(
             expandTileTemplate(template, tile),
             fetcher,
             signal,
-            timeoutMs
+            timeoutMs,
+            (tileResponse) => (tileResponse.ok ? tileResponse.arrayBuffer() : null)
           );
 
           if (!response.ok) {
             return [];
           }
 
-          return decodeWaterwayFeatures(await response.arrayBuffer(), tile);
+          return decodeWaterwayFeatures(/** @type {ArrayBuffer} */ (body), tile);
         } catch (error) {
           throwIfAborted(signal, error);
           return [];
@@ -272,13 +273,19 @@ function latitudeToTileY(latitude, tilesPerAxis) {
  * @param {number} timeoutMs
  */
 async function fetchJson(url, fetcher, signal, timeoutMs) {
-  const response = await fetchWithTimeout(url, fetcher, signal, timeoutMs);
+  const { response, body } = await fetchAndReadWithTimeout(
+    url,
+    fetcher,
+    signal,
+    timeoutMs,
+    (tileJsonResponse) => (tileJsonResponse.ok ? tileJsonResponse.json() : null)
+  );
 
   if (!response.ok) {
     throw new Error(`OpenFreeMap TileJSON request failed: ${response.status}`);
   }
 
-  return response.json();
+  return body;
 }
 
 /**
@@ -318,8 +325,9 @@ function expandTileTemplate(template, tile) {
  * @param {typeof fetch} fetcher
  * @param {AbortSignal | undefined} signal
  * @param {number} timeoutMs
+ * @param {(response: Response) => Promise<unknown> | unknown} readResponse
  */
-function fetchWithTimeout(url, fetcher, signal, timeoutMs) {
+function fetchAndReadWithTimeout(url, fetcher, signal, timeoutMs, readResponse) {
   const controller = new AbortController();
   /** @type {() => void} */
   let abort = () => {};
@@ -344,11 +352,12 @@ function fetchWithTimeout(url, fetcher, signal, timeoutMs) {
     }, timeoutMs);
   });
 
-  return Promise.race([
-    fetcher(url, { signal: controller.signal }),
-    timeoutPromise,
-    abortPromise
-  ]).finally(() => {
+  const requestPromise = Promise.resolve().then(async () => {
+    const response = await fetcher(url, { signal: controller.signal });
+    return { response, body: await readResponse(response) };
+  });
+
+  return Promise.race([requestPromise, timeoutPromise, abortPromise]).finally(() => {
     if (timeout !== undefined) {
       clearTimeout(timeout);
     }

@@ -3238,7 +3238,7 @@ describe("map helpers", () => {
     );
   });
 
-  it("promptly cancels a broad route map while a detail fetch ignores abort", async () => {
+  it("promptly cancels a broad route map while a TileJSON body ignores abort", async () => {
     const host = document.createElement("div");
     const controller = new AbortController();
     const routePoints = [
@@ -3246,21 +3246,11 @@ describe("map helpers", () => {
       { latitude: 61.760921, longitude: 151.762894 }
     ];
     const tileData = createWaterwayVectorTile();
+    const stalledTileJsonResponse = new Response();
+    vi.spyOn(stalledTileJsonResponse, "json").mockImplementation(() => new Promise(() => {}));
     const fetcher = vi.fn(async (url) => {
       if (url === "https://tiles.openfreemap.org/planet") {
-        return new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve(
-                new Response(
-                  JSON.stringify({
-                    tiles: ["https://tiles.openfreemap.org/planet/current/{z}/{x}/{y}.pbf"]
-                  })
-                )
-              ),
-            100
-          )
-        );
+        return stalledTileJsonResponse;
       }
 
       if (url.includes("/planet/current/9/")) {
