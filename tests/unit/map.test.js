@@ -31,8 +31,6 @@ const maplibreMock = vi.hoisted(() => {
   let autoResolveEvents = true;
   let initialLoaded = false;
   let fitBoundsZoom = 0;
-  let addSourceFailureId;
-  let addLayerFailureId;
   /** @type {(bounds: any, options: any) => any} */
   let cameraForBoundsResolver = () => undefined;
   const Map = vi.fn((options) => {
@@ -69,17 +67,9 @@ const maplibreMock = vi.hoisted(() => {
         return instance;
       }),
       addSource: vi.fn((id, source) => {
-        if (id === addSourceFailureId) {
-          throw new Error(`Failed to add source: ${id}`);
-        }
-
         instance.sources.set(id, source);
       }),
       addLayer: vi.fn((layer, beforeId) => {
-        if (layer.id === addLayerFailureId) {
-          throw new Error(`Failed to add layer: ${layer.id}`);
-        }
-
         instance.layers.push(layer);
 
         if (beforeId === undefined) {
@@ -152,12 +142,6 @@ const maplibreMock = vi.hoisted(() => {
     },
     setFitBoundsZoom(value) {
       fitBoundsZoom = value;
-    },
-    setAddSourceFailureId(value) {
-      addSourceFailureId = value;
-    },
-    setAddLayerFailureId(value) {
-      addLayerFailureId = value;
     },
     setCameraForBoundsResolver(value) {
       cameraForBoundsResolver = value;
@@ -877,8 +861,6 @@ describe("map helpers", () => {
     maplibreMock.setAutoResolveEvents(true);
     maplibreMock.setInitialLoaded(false);
     maplibreMock.setFitBoundsZoom(13);
-    maplibreMock.setAddSourceFailureId(undefined);
-    maplibreMock.setAddLayerFailureId(undefined);
     maplibreMock.setCameraForBoundsResolver(() => undefined);
     maplibreMock.Map.mockClear();
     vi.stubGlobal(
