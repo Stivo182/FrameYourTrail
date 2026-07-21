@@ -8,6 +8,8 @@ const MAX_WEB_MERCATOR_LATITUDE = 85.05112878;
 const WATERWAY_DETAIL_SOURCE_ID = "openfreemap-waterway-detail";
 const WATERWAY_DETAIL_LINE_LAYER_ID = "openfreemap-waterway-detail-line";
 const WATERWAY_DETAIL_LABEL_LAYER_ID = "openfreemap-waterway-detail-label";
+const WATERWAY_RIVER_LAYER_ID = "waterway_river";
+const WATERWAY_DETAIL_MIN_LINE_WIDTH = 1.5;
 
 /**
  * @param {{ style: unknown, bounds: unknown, mapZoom: unknown, maxTileCount?: number }} options
@@ -110,6 +112,7 @@ export function createOpenFreeMapWaterwayDetailLayers(style) {
       layer &&
       typeof layer === "object" &&
       !Array.isArray(layer) &&
+      /** @type {{ id?: unknown }} */ (layer).id === WATERWAY_RIVER_LAYER_ID &&
       /** @type {{ type?: unknown }} */ (layer).type === "line" &&
       /** @type {{ "source-layer"?: unknown }} */ (layer)["source-layer"] === "waterway" &&
       typeof (/** @type {{ source?: unknown }} */ (layer).source) === "string"
@@ -130,11 +133,39 @@ export function createOpenFreeMapWaterwayDetailLayers(style) {
   return {
     sourceId: WATERWAY_DETAIL_SOURCE_ID,
     line: /** @type {import("maplibre-gl").LineLayerSpecification} */ (
-      createDetailLayer(lineTemplate, WATERWAY_DETAIL_LINE_LAYER_ID)
+      createDetailLineLayer(lineTemplate)
     ),
     label: /** @type {import("maplibre-gl").SymbolLayerSpecification} */ (
       createDetailLayer(labelTemplate, WATERWAY_DETAIL_LABEL_LAYER_ID)
     )
+  };
+}
+
+/**
+ * @param {unknown} template
+ */
+function createDetailLineLayer(template) {
+  const detailLayer = createDetailLayer(template, WATERWAY_DETAIL_LINE_LAYER_ID);
+  const nativePaint = detailLayer.paint;
+
+  if (!nativePaint || typeof nativePaint !== "object" || Array.isArray(nativePaint)) {
+    return detailLayer;
+  }
+
+  const paint = { .../** @type {Record<string, unknown>} */ (nativePaint) };
+  const nativeLineWidth = paint["line-width"];
+  delete paint["line-dasharray"];
+  delete paint["line-gap-width"];
+
+  return {
+    ...detailLayer,
+    paint: {
+      ...paint,
+      "line-width":
+        nativeLineWidth === undefined
+          ? WATERWAY_DETAIL_MIN_LINE_WIDTH
+          : ["max", WATERWAY_DETAIL_MIN_LINE_WIDTH, nativeLineWidth]
+    }
   };
 }
 
@@ -410,6 +441,7 @@ function isTunnel(properties) {
 /**
  * @param {unknown} template
  * @param {string} id
+ * @returns {Record<string, unknown>}
  */
 function createDetailLayer(template, id) {
   const detailLayer = { .../** @type {Record<string, unknown>} */ (template) };

@@ -1,0 +1,58 @@
+{
+  "sources": {
+    "openmaptiles": {
+      "type": "vector",
+      "url": "https://tiles.openfreemap.org/planet"
+    }
+  },
+  "layers": [
+    {
+      "id": "waterway_river_tunnel",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "waterway",
+      "filter": ["==", ["get", "brunnel"], "tunnel"],
+      "layout": {
+        "line-cap": "butt"
+      },
+      "paint": {
+        "line-color": "#6b7280",
+        "line-dasharray": [3, 3],
+        "line-gap-width": 1,
+        "line-width": 1
+      }
+    },
+    {
+      "id": "waterway_river",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "waterway",
+      "filter": ["all", ["==", ["get", "class"], "river"], ["!=", ["get", "brunnel"], "tunnel"]],
+      "layout": {
+        "line-cap": "round"
+      },
+      "paint": {
+        "line-color": "#a0c8f0",
+        "line-opacity": 0.85,
+        "line-width": ["interpolate", ["exponential", 1.2], ["zoom"], 11, 0.5, 20, 6]
+      }
+    },
+    {
+      "id": "poster-waterway-label",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "waterway",
+      "minzoom": 9,
+      "maxzoom": 14,
+      "filter": ["has", "name"],
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": ["get", "name"]
+      },
+      "paint": {
+        "text-color": "#654321",
+        "text-halo-width": 1
+      }
+    }
+  ]
+}

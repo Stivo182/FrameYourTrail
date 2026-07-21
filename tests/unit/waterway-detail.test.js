@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 import {
   createOpenFreeMapWaterwayDetailLayers,
@@ -31,6 +34,18 @@ const OPENFREEMAP_STYLE = {
 };
 
 const TILE_TEMPLATE = "https://tiles.openfreemap.org/planet/current/{z}/{x}/{y}.pbf";
+
+function readTunnelRegressionStyleFixture() {
+  return JSON.parse(
+    readFileSync(
+      resolve(
+        import.meta.dirname,
+        "../fixtures/openfreemap-waterway-detail-tunnel-regression.json"
+      ),
+      "utf8"
+    )
+  );
+}
 
 function createTileJsonResponse(tiles = [TILE_TEMPLATE]) {
   return new Response(JSON.stringify({ tiles }), {
@@ -278,7 +293,7 @@ describe("OpenFreeMap waterway detail", () => {
     expect(fetcher).toHaveBeenCalledTimes(7);
   });
 
-  it("derives the source URL and preserves native line and poster label styling", () => {
+  it("derives the source URL and preserves normal river and poster label styling", () => {
     const style = {
       sources: {
         renamedProviderSource: {
@@ -288,7 +303,7 @@ describe("OpenFreeMap waterway detail", () => {
       },
       layers: [
         {
-          id: "renamed-river-line",
+          id: "waterway_river",
           type: "line",
           source: "renamedProviderSource",
           "source-layer": "waterway",
@@ -325,7 +340,37 @@ describe("OpenFreeMap waterway detail", () => {
         type: "line",
         source: "openfreemap-waterway-detail",
         layout: { "line-cap": "round" },
-        paint: { "line-color": "#123456", "line-width": 2 }
+        paint: { "line-color": "#123456", "line-width": ["max", 1.5, 2] }
+      },
+      label: {
+        id: "openfreemap-waterway-detail-label",
+        type: "symbol",
+        source: "openfreemap-waterway-detail",
+        layout: { "symbol-placement": "line", "text-field": ["get", "name"] },
+        paint: { "text-color": "#654321", "text-halo-width": 1 }
+      }
+    });
+  });
+
+  it("uses the normal river style when a tunnel waterway layer appears first", () => {
+    const style = readTunnelRegressionStyleFixture();
+
+    expect(createOpenFreeMapWaterwayDetailLayers(style)).toEqual({
+      sourceId: "openfreemap-waterway-detail",
+      line: {
+        id: "openfreemap-waterway-detail-line",
+        type: "line",
+        source: "openfreemap-waterway-detail",
+        layout: { "line-cap": "round" },
+        paint: {
+          "line-color": "#a0c8f0",
+          "line-opacity": 0.85,
+          "line-width": [
+            "max",
+            1.5,
+            ["interpolate", ["exponential", 1.2], ["zoom"], 11, 0.5, 20, 6]
+          ]
+        }
       },
       label: {
         id: "openfreemap-waterway-detail-label",
