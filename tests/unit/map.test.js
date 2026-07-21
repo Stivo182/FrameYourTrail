@@ -1,6 +1,7 @@
 import { featureFilter, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import Pbf from "pbf";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { haversineMeters } from "../../src/core/geo.js";
 import { createI18n } from "../../src/i18n/index.js";
@@ -839,13 +840,41 @@ function createOpenFreeMapStyleResponse() {
   });
 }
 
+function createWaterwayVectorTile() {
+  const pbf = new Pbf();
+  pbf.writeMessage(3, writeWaterwayLayer, undefined);
+  return pbf.finish();
+}
+
+function writeWaterwayLayer(_value, pbf) {
+  pbf.writeVarintField(15, 2);
+  pbf.writeStringField(1, "waterway");
+  pbf.writeStringField(3, "name");
+  pbf.writeStringField(3, "brunnel");
+  pbf.writeMessage(4, writeStringValue, "Tributary");
+  pbf.writeMessage(4, writeStringValue, "tunnel");
+  pbf.writeMessage(2, writeWaterwayFeature, [0, 0]);
+  pbf.writeMessage(2, writeWaterwayFeature, [0, 0, 1, 1]);
+  pbf.writeVarintField(5, 4096);
+}
+
+function writeStringValue(value, pbf) {
+  pbf.writeStringField(1, value);
+}
+
+function writeWaterwayFeature(tags, pbf) {
+  pbf.writePackedVarint(2, tags);
+  pbf.writeVarintField(3, 2);
+  pbf.writePackedVarint(4, [9, 20, 20, 10, 20, 20]);
+}
+
 describe("map helpers", () => {
   beforeEach(() => {
     maplibreMock.instances.length = 0;
     maplibreMock.pendingEvents.length = 0;
     maplibreMock.setAutoResolveEvents(true);
     maplibreMock.setInitialLoaded(false);
-    maplibreMock.setFitBoundsZoom(0);
+    maplibreMock.setFitBoundsZoom(13);
     maplibreMock.setCameraForBoundsResolver(() => undefined);
     maplibreMock.Map.mockClear();
     vi.stubGlobal(
@@ -3151,6 +3180,57 @@ describe("map helpers", () => {
       { padding: 48, duration: 0 }
     );
     expect(host.querySelector(".static-map-fallback")).toBeNull();
+  });
+
+  it("adds z9 waterway detail below the route without changing a broad route fit", async () => {
+    const host = document.createElement("div");
+    const routePoints = [
+      { latitude: 61.061819, longitude: 150.638698 },
+      { latitude: 61.760921, longitude: 151.762894 }
+    ];
+    const tileData = createWaterwayVectorTile();
+    maplibreMock.setFitBoundsZoom(8.1856);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        if (url === "https://tiles.openfreemap.org/planet") {
+          return new Response(
+            JSON.stringify({
+              tiles: ["https://tiles.openfreemap.org/planet/current/{z}/{x}/{y}.pbf"]
+            })
+          );
+        }
+
+        if (url.includes("/planet/current/9/")) {
+          return new Response(Uint8Array.from(tileData).buffer);
+        }
+
+        return createOpenFreeMapStyleResponse();
+      })
+    );
+
+    await expect(initRouteMap(host, routePoints, createI18n("en"))).resolves.toMatchObject({
+      status: "ready"
+    });
+
+    const map = maplibreMock.instances[0];
+    const detail = map.sources.get("openfreemap-waterway-detail");
+    const layerIndex = (id) => map.styleLayers.findIndex((layer) => layer.id === id);
+
+    expect(map.getZoom()).toBe(8.1856);
+    expect(detail.data.features).toHaveLength(6);
+    expect(detail.data.features.every((feature) => feature.properties.brunnel !== "tunnel")).toBe(
+      true
+    );
+    expect(layerIndex("openfreemap-waterway-detail-line")).toBeLessThan(
+      layerIndex("route-line-halo")
+    );
+    expect(layerIndex("openfreemap-waterway-detail-label")).toBeGreaterThan(
+      layerIndex("route-line")
+    );
+    expect(layerIndex("openfreemap-waterway-detail-label")).toBeLessThan(
+      layerIndex("poster-waterway-label")
+    );
   });
 
   it("nudges near-detail OpenFreeMap route maps at the safe-padding zoom boundary", async () => {

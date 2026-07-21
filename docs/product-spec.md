@@ -579,6 +579,11 @@ Map requirements:
   are excluded because OpenFreeMap tiles do not expose a reliable lighthouse
   class;
   `landcover` and `landuse` are not labeled because they do not expose names
+- when a default OpenFreeMap route fit remains below zoom 9, the map may add a
+  capped best-effort z9 waterway overlay from the loaded style's vector TileJSON
+  source; it keeps line features outside tunnels below the route, places their
+  names in the normal label tier, leaves the fitted viewport unchanged, and
+  never lets overlay failures trigger the static-map fallback
 - supplemental text labels have lower collision priority than every native
   textual map label; route lines render above map geometry but below the text
   label tier, while start and finish endpoint circles and labels remain on top
