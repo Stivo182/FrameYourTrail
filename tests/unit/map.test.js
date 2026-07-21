@@ -287,7 +287,7 @@ const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
     id: "poster-landuse-industrial",
     classes: ["industrial", "garages", "railway", "military", "dam"],
-    color: "#cfcbc5"
+    color: "#F4E2DC"
   },
   {
     id: "poster-landuse-civic",
@@ -2350,7 +2350,7 @@ describe("map helpers", () => {
     });
     expect(layerPaint("building")).toMatchObject({
       "fill-color": "#d7d0c2",
-      "fill-outline-color": "#a99f90"
+      "fill-outline-color": "#ccc5bb"
     });
     expect(layerPaint("building-3d")?.["fill-extrusion-color"]).toBe("#d7d0c2");
     expect(layer("poster-building-outline")).toMatchObject({
@@ -2361,7 +2361,7 @@ describe("map helpers", () => {
       minzoom: 13,
       filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
       paint: {
-        "line-color": "#a99f90",
+        "line-color": "#ccc5bb",
         "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 14, 0.45, 16, 0.65, 20, 0.95],
         "line-opacity": 0.9
       }
@@ -2766,7 +2766,7 @@ describe("map helpers", () => {
       source: "openmaptiles",
       "source-layer": "aeroway",
       filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
-      paint: { "fill-color": "#d5d0c7" }
+      paint: { "fill-color": "#e4e2e0" }
     });
     expect(layerIndex("poster-aeroway-fill") + 1).toBe(layerIndex("aeroway-runway"));
     expect(layerIndex("aeroway-runway")).toBeLessThan(layerIndex("aeroway-taxiway"));
@@ -2825,7 +2825,7 @@ describe("map helpers", () => {
       minzoom: 11,
       filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
       paint: {
-        "fill-color": "#d5d0c7",
+        "fill-color": "#e4e2e0",
         "fill-opacity": 0.7
       }
     });
@@ -2921,7 +2921,7 @@ describe("map helpers", () => {
         source: "openmaptiles",
         "source-layer": "aeroway",
         filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
-        paint: { "fill-color": "#d5d0c7" }
+        paint: { "fill-color": "#e4e2e0" }
       });
     }
   });
