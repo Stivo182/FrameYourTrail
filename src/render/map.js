@@ -6,11 +6,6 @@ import {
   loadMapStyle,
   normalizeMapStyleId
 } from "./map-styles.js";
-import {
-  createOpenFreeMapWaterwayDetailLayers,
-  createOpenFreeMapWaterwayDetailPlan,
-  fetchOpenFreeMapWaterwayDetail
-} from "./waterway-detail.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
@@ -785,7 +780,6 @@ export async function initRouteMap(
     map.fitBounds(mapBounds, { padding: ROUTE_MAP_FIT_PADDING_PIXELS, duration: 0 });
     if (normalizeMapStyleId(mapStyleId) === DEFAULT_MAP_STYLE_ID) {
       nudgeRouteMapToDetailZoom(map, mapBounds);
-      await addOpenFreeMapWaterwayDetail(map, openFreeMapStyle, bounds, routeLayerAnchorId, signal);
     }
 
     throwIfRouteMapAborted(signal);
@@ -815,75 +809,6 @@ export async function initRouteMap(
       renderStaticRouteFallback(host, points, i18n, speedSeries);
     }
     return { status: "fallback", error };
-  }
-}
-
-/**
- * @param {import("maplibre-gl").Map} map
- * @param {import("maplibre-gl").StyleSpecification} style
- * @param {ReturnType<typeof getBounds>} bounds
- * @param {string | undefined} labelAnchorId
- * @param {AbortSignal | undefined} signal
- */
-async function addOpenFreeMapWaterwayDetail(map, style, bounds, labelAnchorId, signal) {
-  const plan = createOpenFreeMapWaterwayDetailPlan({
-    style,
-    bounds,
-    mapZoom: map.getZoom()
-  });
-  let detail;
-
-  try {
-    detail = await fetchOpenFreeMapWaterwayDetail({ plan, signal });
-  } catch {
-    throwIfRouteMapAborted(signal);
-    return;
-  }
-
-  throwIfRouteMapAborted(signal);
-
-  if (!detail) {
-    return;
-  }
-
-  let sourceId;
-  const addedLayerIds = [];
-
-  try {
-    const layers = createOpenFreeMapWaterwayDetailLayers(style);
-
-    if (!layers) {
-      return;
-    }
-
-    sourceId = layers.sourceId;
-    map.addSource(sourceId, {
-      type: "geojson",
-      data: /** @type {import("maplibre-gl").GeoJSONSourceSpecification["data"]} */ (detail)
-    });
-    map.addLayer(layers.line, "route-line-halo");
-    addedLayerIds.push(layers.line.id);
-
-    if (labelAnchorId) {
-      map.addLayer(layers.label, labelAnchorId);
-      addedLayerIds.push(layers.label.id);
-    }
-  } catch {
-    for (const layerId of addedLayerIds.reverse()) {
-      try {
-        map.removeLayer(layerId);
-      } catch {
-        // Detail overlay cleanup is best-effort too.
-      }
-    }
-
-    if (sourceId) {
-      try {
-        map.removeSource(sourceId);
-      } catch {
-        // Detail overlay cleanup is best-effort too.
-      }
-    }
   }
 }
 
