@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
+import { VectorTileLayer } from "@mapbox/vector-tile";
 import { describe, expect, it, vi } from "vitest";
 import {
   createOpenFreeMapWaterwayDetailLayers,
@@ -222,7 +223,24 @@ describe("OpenFreeMap waterway detail", () => {
     expect(fetcher).toHaveBeenCalledTimes(7);
   });
 
-  it("omits oversized provider feature IDs while preserving decoded river data", async () => {
+  it("normalizes decoded river features into plain serializable GeoJSON objects", async () => {
+    const providerProperties = Object.assign(Object.create(null), {
+      name: "Bakhapcha Tributary",
+      class: "river",
+      rank: 3
+    });
+    const providerFeature = Object.assign(Object.create(null), {
+      type: "Feature",
+      properties: providerProperties,
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [150.6, 61.0],
+          [151.7, 61.7]
+        ]
+      },
+      id: 4_294_967_297
+    });
     const tileData = createWaterwayVectorTile({
       features: [
         {
@@ -241,7 +259,17 @@ describe("OpenFreeMap waterway detail", () => {
         : new Response(null, { status: 503 });
     });
 
+    const vectorTileFeature = /** @type {import("@mapbox/vector-tile").VectorTileFeature} */ (
+      /** @type {unknown} */ ({
+        properties: providerProperties,
+        toGeoJSON: () => providerFeature
+      })
+    );
+    const featureSpy = vi
+      .spyOn(VectorTileLayer.prototype, "feature")
+      .mockReturnValue(vectorTileFeature);
     const detail = await fetchOpenFreeMapWaterwayDetail({ plan: createBakhapchaPlan(), fetcher });
+    featureSpy.mockRestore();
 
     expect(detail).toMatchObject({
       type: "FeatureCollection",
@@ -254,7 +282,14 @@ describe("OpenFreeMap waterway detail", () => {
       ]
     });
     expect(detail?.features).toHaveLength(1);
-    expect(detail?.features[0]).not.toHaveProperty("id");
+    const [decodedFeature] = detail?.features ?? [];
+
+    expect(Object.getPrototypeOf(decodedFeature)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(decodedFeature.properties)).toBe(Object.prototype);
+    expect(decodedFeature).not.toHaveProperty("id");
+    expect(decodedFeature).not.toBe(providerFeature);
+    expect(decodedFeature.properties).not.toBe(providerProperties);
+    expect(JSON.parse(JSON.stringify(decodedFeature))).toEqual(decodedFeature);
   });
 
   it("keeps a malformed vector tile best-effort when another tile decodes", async () => {
