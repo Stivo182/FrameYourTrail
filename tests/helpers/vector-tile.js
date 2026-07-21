@@ -6,7 +6,7 @@ const DEFAULT_WATERWAY_FEATURES = [
 ];
 
 /**
- * @param {{ layerName?: string, features?: { properties: Record<string, string | number | boolean>, geometryType?: 1 | 2 }[] }} [options]
+ * @param {{ layerName?: string, features?: { id?: number, properties: Record<string, string | number | boolean>, geometryType?: 1 | 2 }[] }} [options]
  */
 export function createWaterwayVectorTile(options = {}) {
   const layer = createLayerFixture(options);
@@ -39,7 +39,7 @@ function createLayerFixture(options) {
       tags.push(keyIndexes.get(key), valueIndexes.get(valueKey));
     }
 
-    return { tags, geometryType: feature.geometryType ?? 2 };
+    return { id: feature.id, tags, geometryType: feature.geometryType ?? 2 };
   });
 
   return { name: options.layerName ?? "waterway", keys, values, features };
@@ -75,6 +75,10 @@ function writeValue(value, pbf) {
 }
 
 function writeFeature(feature, pbf) {
+  if (feature.id !== undefined) {
+    pbf.writeVarintField(1, feature.id);
+  }
+
   pbf.writePackedVarint(2, feature.tags);
   pbf.writeVarintField(3, feature.geometryType);
   pbf.writePackedVarint(4, feature.geometryType === 2 ? [9, 20, 20, 10, 20, 20] : [9, 20, 20]);

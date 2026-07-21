@@ -222,6 +222,41 @@ describe("OpenFreeMap waterway detail", () => {
     expect(fetcher).toHaveBeenCalledTimes(7);
   });
 
+  it("omits oversized provider feature IDs while preserving decoded river data", async () => {
+    const tileData = createWaterwayVectorTile({
+      features: [
+        {
+          id: 4_294_967_297,
+          properties: { name: "Bakhapcha Tributary", class: "river", rank: 3 }
+        }
+      ]
+    });
+    const fetcher = vi.fn(async (url) => {
+      if (url === "https://tiles.openfreemap.org/planet") {
+        return createTileJsonResponse();
+      }
+
+      return url.endsWith("/9/470/143.pbf")
+        ? new Response(Uint8Array.from(tileData).buffer)
+        : new Response(null, { status: 503 });
+    });
+
+    const detail = await fetchOpenFreeMapWaterwayDetail({ plan: createBakhapchaPlan(), fetcher });
+
+    expect(detail).toMatchObject({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { name: "Bakhapcha Tributary", class: "river", rank: 3 },
+          geometry: { type: "LineString", coordinates: expect.any(Array) }
+        }
+      ]
+    });
+    expect(detail?.features).toHaveLength(1);
+    expect(detail?.features[0]).not.toHaveProperty("id");
+  });
+
   it("keeps a malformed vector tile best-effort when another tile decodes", async () => {
     const tileData = createWaterwayVectorTile({
       features: [{ properties: { name: "Decoded Tributary", class: "stream" } }]

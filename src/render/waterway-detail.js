@@ -411,6 +411,7 @@ function decodeWaterwayFeatures(tileData, tile) {
     }
 
     const geoJson = feature.toGeoJSON(tile.x, tile.y, tile.z);
+    delete geoJson.id;
 
     if (geoJson.geometry.type === "LineString" || geoJson.geometry.type === "MultiLineString") {
       features.push(geoJson);

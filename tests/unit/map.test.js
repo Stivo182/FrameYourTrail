@@ -3193,7 +3193,14 @@ describe("map helpers", () => {
       { latitude: 61.061819, longitude: 150.638698 },
       { latitude: 61.760921, longitude: 151.762894 }
     ];
-    const tileData = createWaterwayVectorTile();
+    const tileData = createWaterwayVectorTile({
+      features: [
+        {
+          id: 4_294_967_297,
+          properties: { name: "Bakhapcha Tributary", class: "river" }
+        }
+      ]
+    });
     maplibreMock.setFitBoundsZoom(8.1856);
     vi.stubGlobal(
       "fetch",
@@ -3227,6 +3234,7 @@ describe("map helpers", () => {
     expect(detail.data.features.every((feature) => feature.properties.brunnel !== "tunnel")).toBe(
       true
     );
+    expect(detail.data.features.every((feature) => feature.id === undefined)).toBe(true);
     expect(layerIndex("openfreemap-waterway-detail-line")).toBeLessThan(
       layerIndex("route-line-halo")
     );
