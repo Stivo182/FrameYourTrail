@@ -310,7 +310,7 @@ const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
     id: "poster-landuse-quarry",
     classes: ["quarry"],
-    color: "#d2d0c7"
+    color: "#EEE5DC"
   }
 ];
 
@@ -2388,7 +2388,7 @@ describe("map helpers", () => {
     const layerPaint = (id) => style.layers.find((layer) => layer.id === id)?.paint;
 
     expect(layerPaint("natural-area-a")?.["fill-color"]).toBe("#e8ddbf");
-    expect(layerPaint("natural-area-b")?.["fill-color"]).toBe("#d2d0c7");
+    expect(layerPaint("natural-area-b")?.["fill-color"]).toBe("#EEE5DC");
     expect(layerPaint("natural-area-c")?.["fill-color"]).toBe("#e8ddbf");
     expect(layerPaint("agricultural-landcover")?.["fill-color"]).toBe("#d8d8b5");
     expect(layerPaint("natural-area-mixed-any")?.["fill-color"]).toBe("#d7dfd0");
@@ -2944,7 +2944,7 @@ describe("map helpers", () => {
       source: "openmaptiles",
       "source-layer": "landcover",
       filter: expectedFilters["poster-landcover-rock"],
-      paint: { "fill-color": "#d2d0c7" }
+      paint: { "fill-color": "#EEE5DC" }
     });
     expect(layer("poster-landcover-farmland")).toMatchObject({
       type: "fill",
