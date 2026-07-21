@@ -11,7 +11,7 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   land: "#f0eee3",
   park: "#d7dfd0",
   sand: "#e8ddbf",
-  rock: "#d2d0c7",
+  rock: "#EEE5DC",
   farmland: "#d8d8b5",
   residential: "#e2ddd5",
   commercial: "#ddcecc",
