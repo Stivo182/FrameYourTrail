@@ -77,8 +77,5 @@ function writeValue(value, pbf) {
 function writeFeature(feature, pbf) {
   pbf.writePackedVarint(2, feature.tags);
   pbf.writeVarintField(3, feature.geometryType);
-  pbf.writePackedVarint(
-    4,
-    feature.geometryType === 2 ? [9, 20, 20, 10, 20, 20] : [9, 20, 20]
-  );
+  pbf.writePackedVarint(4, feature.geometryType === 2 ? [9, 20, 20, 10, 20, 20] : [9, 20, 20]);
 }

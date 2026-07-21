@@ -189,6 +189,33 @@ describe("OpenFreeMap waterway detail", () => {
     expect(fetcher).toHaveBeenCalledTimes(7);
   });
 
+  it("keeps a malformed vector tile best-effort when another tile decodes", async () => {
+    const tileData = createWaterwayVectorTile({
+      features: [{ properties: { name: "Decoded Tributary", class: "stream" } }]
+    });
+    const fetcher = vi.fn(async (url) => {
+      if (url === "https://tiles.openfreemap.org/planet") {
+        return createTileJsonResponse();
+      }
+
+      if (url.endsWith("/9/470/143.pbf")) {
+        return new Response(Uint8Array.from([255, 255, 255]).buffer);
+      }
+
+      return url.endsWith("/9/471/143.pbf")
+        ? new Response(Uint8Array.from(tileData).buffer)
+        : new Response(null, { status: 503 });
+    });
+
+    await expect(
+      fetchOpenFreeMapWaterwayDetail({ plan: createBakhapchaPlan(), fetcher })
+    ).resolves.toMatchObject({
+      type: "FeatureCollection",
+      features: [{ properties: { name: "Decoded Tributary", class: "stream" } }]
+    });
+    expect(fetcher).toHaveBeenCalledTimes(7);
+  });
+
   it("ignores malformed TileJSON before requesting vector tiles", async () => {
     const fetcher = vi.fn(async () => createTileJsonResponse(["https://example.test/no-tags.pbf"]));
 
