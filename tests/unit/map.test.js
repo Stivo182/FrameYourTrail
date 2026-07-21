@@ -288,7 +288,7 @@ const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
     id: "poster-landuse-recreation",
     classes: ["stadium", "playground", "theme_park", "zoo", "pitch", "track", "cemetery"],
-    color: "#ECE7D2"
+    color: "#d8dfce"
   },
   {
     id: "poster-landuse-quarry",
@@ -2328,6 +2328,10 @@ describe("map helpers", () => {
     });
     expect(layerPaint("landcover")).toEqual({
       "fill-color": "#dbe9e8"
+    });
+    expect(layerPaint("water")).toEqual({
+      "fill-color": "#d6e3e0",
+      "fill-outline-color": "#7ba8a8"
     });
     expect(layerPaint("building")).toMatchObject({
       "fill-color": "#d7d0c2",

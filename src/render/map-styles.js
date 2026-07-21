@@ -17,7 +17,7 @@ const POSTER_BACKGROUND_MAP_PALETTE = Object.freeze({
   commercial: "#ddcecc",
   industrial: "#F4E2DC",
   civic: "#e4dec7",
-  recreation: "#ECE7D2",
+  recreation: "#d8dfce",
   aerowayArea: "#e4e2e0",
   water: "#d6e3e0",
   waterLine: "#7ba8a8",
@@ -1335,7 +1335,9 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
     paint["fill-color"] = getPosterFillColor(sourceLayer, layerKey, layerObject.filter);
-    if (hasMapLayerToken(layerKey, ["building"])) {
+    if (sourceLayer === "water") {
+      paint["fill-outline-color"] = POSTER_BACKGROUND_MAP_PALETTE.waterLine;
+    } else if (hasMapLayerToken(layerKey, ["building"])) {
       paint["fill-outline-color"] = POSTER_BACKGROUND_MAP_PALETTE.buildingOutline;
     } else {
       delete paint["fill-outline-color"];
