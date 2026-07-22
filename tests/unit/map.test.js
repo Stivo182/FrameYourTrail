@@ -2231,8 +2231,8 @@ describe("map helpers", () => {
       "fill-color": "#d7dfd0"
     });
     expect(layerPaint("water")?.["fill-color"]).toBe("#d6e3e0");
-    expect(layerPaint("waterway_river")?.["line-color"]).toBe("#d6e3e0");
-    expect(layerPaint("waterway_other")?.["line-color"]).toBe("#d6e3e0");
+    expect(layerPaint("waterway_river")?.["line-color"]).toBe("#7ba8a8");
+    expect(layerPaint("waterway_other")?.["line-color"]).toBe("#7ba8a8");
     expect(layer("waterway_line_label")).toMatchObject({
       minzoom: 10,
       layout: expect.objectContaining({

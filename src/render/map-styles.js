@@ -1518,7 +1518,7 @@ function getPosterFillColor(sourceLayer, layerKey, filter) {
  */
 function getPosterLineColor(layerKey) {
   if (hasMapLayerToken(layerKey, ["water", "waterway"])) {
-    return POSTER_BACKGROUND_MAP_PALETTE.water;
+    return POSTER_BACKGROUND_MAP_PALETTE.waterLine;
   }
 
   if (isParkOutlineLayer(layerKey)) {
