@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "metadata": {
+    "tilesetUrlTemplate": "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
+    "capturedOn": "2026-07-20",
+    "decoder": "@mapbox/vector-tile 2.0.4",
+    "curatedScope": "Decoded representative aerialway, ferry, motorway name, and lighthouse POI features for poster provider extension contracts"
+  },
+  "features": [
+    {
+      "id": "miyajima-ropeway-line",
+      "posterLayerId": "poster-aerialway-line",
+      "tile": {
+        "z": 14,
+        "x": 14214,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+      },
+      "sourceLayer": "transportation",
+      "featureIndex": "27",
+      "featureId": "416666932",
+      "geometryType": "LineString",
+      "properties": {
+        "class": "aerialway",
+        "subclass": "cable_car",
+        "oneway": 1
+      }
+    },
+    {
+      "id": "miyajima-ropeway-label",
+      "posterLayerId": "poster-aerialway-label",
+      "tile": {
+        "z": 14,
+        "x": 14214,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+      },
+      "sourceLayer": "transportation_name",
+      "featureIndex": "4",
+      "featureId": "416666930",
+      "geometryType": "LineString",
+      "properties": {
+        "name": "宮島ロープウエー",
+        "class": "aerialway",
+        "subclass": "cable_car",
+        "name_en": "Miyajima Ropeway",
+        "name:latin": "Miyajima Ropeway",
+        "name:nonlatin": "宮島ロープウエー"
+      }
+    },
+    {
+      "id": "jr-miyajima-ferry-line",
+      "posterLayerId": "poster-shipway-line",
+      "tile": {
+        "z": 14,
+        "x": 14213,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+      },
+      "sourceLayer": "transportation",
+      "featureIndex": "6",
+      "featureId": "419619980",
+      "geometryType": "LineString",
+      "properties": {
+        "class": "ferry"
+      }
+    },
+    {
+      "id": "jr-miyajima-ferry-label",
+      "posterLayerId": "poster-shipway-label",
+      "tile": {
+        "z": 14,
+        "x": 14213,
+        "y": 6528,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+      },
+      "sourceLayer": "transportation_name",
+      "featureIndex": "0",
+      "featureId": "419619982",
+      "geometryType": "LineString",
+      "properties": {
+        "name": "JR宮島連絡船",
+        "class": "ferry",
+        "name_en": "JR Miyajima Ferry",
+        "name:latin": "JR Miyajima Ferry",
+        "name:nonlatin": "宮島連絡船"
+      }
+    },
+    {
+      "id": "john-fitzgerald-expressway-label",
+      "posterLayerId": "poster-highway-name-motorway",
+      "tile": {
+        "z": 14,
+        "x": 4957,
+        "y": 6059,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/4957/6059.pbf"
+      },
+      "sourceLayer": "transportation_name",
+      "featureIndex": "10",
+      "featureId": "489820340",
+      "geometryType": "LineString",
+      "properties": {
+        "name": "John F. Fitzgerald Expressway",
+        "name_en": "John F. Fitzgerald Expressway",
+        "name:latin": "John F. Fitzgerald Expressway",
+        "class": "motorway",
+        "network": "us-interstate",
+        "ref": "93",
+        "route_1_network": "US:I",
+        "route_1_ref": "93",
+        "route_2_network": "US:US",
+        "route_2_ref": "1"
+      }
+    },
+    {
+      "id": "westerheversand-lighthouse-label",
+      "posterLayerId": "poster-lighthouse-label",
+      "tile": {
+        "z": 14,
+        "x": 8585,
+        "y": 5231,
+        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/8585/5231.pbf"
+      },
+      "sourceLayer": "poi",
+      "featureIndex": "0",
+      "featureId": "875341692",
+      "geometryType": "Point",
+      "properties": {
+        "class": "attraction",
+        "subclass": "attraction",
+        "name": "Leuchtturm Westerheversand",
+        "name_en": "Leuchtturm Westerheversand",
+        "name:latin": "Leuchtturm Westerheversand",
+        "name:en": "Westerheversand Lighthouse",
+        "rank": 1
+      }
+    }
+  ]
+}

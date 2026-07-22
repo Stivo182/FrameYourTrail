@@ -65,6 +65,14 @@ npm run test:a11y
 npm run test:visual
 ```
 
+Normal tests use pinned offline OpenFreeMap fixtures, and normal app use remains
+network-optional. To compare those contracts with the live provider style and
+current vector tiles, run the opt-in network check:
+
+```powershell
+npm run test:map-contract:live
+```
+
 Preview a production build locally:
 
 ```powershell

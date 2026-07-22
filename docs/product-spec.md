@@ -550,13 +550,56 @@ Map requirements:
 - app-owned route and endpoint layers
 - localized start and finish endpoint labels
 - bounds fitted to the loaded route with compact padding so nearby map detail
-  remains visible
-- road, trail, path, and track layers stay visually distinct within the poster
-  palette
-- external fill patterns, including wetland and landcover patterns, are
-  neutralized in the default vector palette
-- external fill outlines are neutralized or removed, and external park or
-  aeroway line patterns use the poster palette
+  remains visible; near-detail OpenFreeMap route maps may tighten the fit to
+  source zoom 13 when the route and endpoint overlays still fit with compact
+  safe padding, so building and path detail can appear on routes that are just
+  below the building source zoom
+- road names, named trail/path/track labels, trail/path/track linework, and
+  cable lift/aerialway detail stay visually distinct within the poster palette
+  where the loaded OpenFreeMap style advertises the underlying vector data;
+  supplemental detail follows that vector source even when its internal source
+  id changes, omits detail with ambiguous source ownership, preserves upstream
+  bridge/tunnel hierarchy, and keeps surface transport below buildings and
+  administrative boundaries
+- the default OpenFreeMap style supplements named park labels from zoom 10 and
+  mountain peak labels from zoom 9 when those vector tile source layers expose
+  names, supplements medium-zoom river and water body labels where OpenFreeMap
+  exposes named waterway or water-name features, supplements detailed-zoom
+  tourist landmark labels for named attractions, castles, museums, temples,
+  shrines, and viewpoints, and supplements motorway road names, cable
+  lift/aerialway names, and sea/ferry route names when the transportation name
+  source layer exposes them; the `transportation_name` values `class=motorway`,
+  `class=aerialway`, and `class=ferry` are current OpenFreeMap Planetiler
+  provider extensions used on a best-effort basis, not a guarantee of the
+  generic OpenMapTiles schema; it also adds best-effort lighthouse labels from
+  attraction or museum POIs when any of `name`, `name_en`, `name:en`, or
+  `name:latin` contains `lighthouse`, `light house`, or `灯台`, equals `Light`,
+  or ends with the token ` Light`; internal or plural
+  substrings such as `Twilight`, `Red Light District`, and `Piccadilly Lights`
+  are excluded because OpenFreeMap tiles do not expose a reliable lighthouse
+  class;
+  `landcover` and `landuse` are not labeled because they do not expose names
+- supplemental text labels have lower collision priority than every native
+  textual map label; route lines render above map geometry but below the text
+  label tier, while start and finish endpoint circles and labels remain on top
+- river, water body, sea/ferry route, and building detail stays readable where
+  OpenFreeMap exposes the underlying vector data; building fills and outlines
+  use enough contrast to remain visible at source zooms that include buildings
+- where OpenFreeMap's current OpenMapTiles source exposes the corresponding
+  area data, native fill coverage and zoom policy are authoritative, and
+  supplemental fills cover only missing semantic class gaps; the default style
+  keeps the `ice` class and `glacier`/`ice_shelf` subclasses, sand/beach/dune,
+  rock/`bare_rock`/scree, the farmland group (`farmland`, `farm`, `orchard`,
+  `vineyard`, and `plant_nursery`), and aeroway polygons distinct from park and
+  generic landcover fills; all current OpenMapTiles landuse areas receive
+  restrained semantic grouping across the residential hierarchy,
+  commercial/retail, industrial/infrastructure, civic/education/health,
+  recreation/cemetery, and quarry
+- selected OpenFreeMap fill patterns, including wetland and pedestrian-area
+  patterns, are preserved as restrained-opacity detail overlays above
+  poster-colored base fills when they improve map detail
+- unrelated external fill patterns and external fill outlines are neutralized
+  or removed, and external park or aeroway line patterns use the poster palette
 - white route halo
 - speed-colored route line when usable speed data is available
 - single route color when speed data is unavailable or unusable
