@@ -258,11 +258,6 @@ const NATIVE_LANDUSE_CLASS_FIXTURES = [
 
 const EXPECTED_LANDUSE_AREA_GROUPS = [
   {
-    id: "poster-landuse-residential",
-    classes: ["residential", "suburb", "quarter", "neighbourhood"],
-    color: "#e2ddd5"
-  },
-  {
     id: "poster-landuse-commercial",
     classes: ["commercial", "retail"],
     color: "#ddcecc"
@@ -963,11 +958,13 @@ describe("map helpers", () => {
     }
   });
 
-  it("preserves the exact captured Liberty contract across original and renamed sources", async () => {
+  it("preserves the retained captured Liberty contract across original and renamed sources", async () => {
     const fixture = readOpenFreeMapLibertyContractFixture();
-    const retainedLayerIds = fixture.layers.map((layer) => layer.id);
+    const suppressedLayerIds = new Set(["landuse_residential", "highway-shield-non-us"]);
+    const retainedLayerIds = fixture.layers
+      .map((layer) => layer.id)
+      .filter((layerId) => !suppressedLayerIds.has(layerId));
     const expectedGeneratedVectorLayerIds = new Set([
-      "poster-landuse-residential",
       "poster-landuse-commercial",
       "poster-landuse-industrial",
       "poster-landuse-civic",
@@ -1063,7 +1060,8 @@ describe("map helpers", () => {
             styleLayer.layout &&
             Object.hasOwn(styleLayer.layout, "text-field")
         )
-        .map((styleLayer) => styleLayer.id);
+        .map((styleLayer) => styleLayer.id)
+        .filter((layerId) => !suppressedLayerIds.has(layerId));
       const supplementalTextLabelIds = style.layers
         .filter(
           (styleLayer) =>
@@ -1083,6 +1081,7 @@ describe("map helpers", () => {
       expect(
         style.layers.filter((layer) => retainedLayerIdSet.has(layer.id)).map((layer) => layer.id)
       ).toEqual(retainedLayerIds);
+      expect(finalLayerIds).not.toEqual(expect.arrayContaining([...suppressedLayerIds]));
       expect(finalLayerIds).toEqual(expect.arrayContaining(orderingAnchorIds));
       expect(nativeTextLabelIds.length).toBeGreaterThan(0);
       expect(supplementalTextLabelIds.length).toBeGreaterThan(0);
@@ -1460,8 +1459,13 @@ describe("map helpers", () => {
     expect(finalLayerIds.filter((id) => nativeTextLabelIds.includes(id))).toEqual(
       nativeTextLabelIds
     );
+    const suppressedLayerIds = new Set([
+      "highway-shield",
+      "landuse_residential",
+      "missing-landuse-suburb"
+    ]);
     expect(finalLayerIds.filter((id) => nonTextLayers.some((layer) => layer.id === id))).toEqual(
-      nonTextLayers.map((layer) => layer.id)
+      nonTextLayers.map((layer) => layer.id).filter((id) => !suppressedLayerIds.has(id))
     );
     expect(Math.min(...nativeTextLabelIds.map((id) => finalLayerIds.indexOf(id)))).toBeGreaterThan(
       finalNonSymbolIndex
@@ -2196,13 +2200,20 @@ describe("map helpers", () => {
 
     expect(firstStyle).not.toBe(secondStyle);
     expect(firstStyle.layers).not.toBe(secondStyle.layers);
+    const firstFilteredLayer = firstStyle.layers.find((layer) => Array.isArray(layer.filter));
+    const secondFilteredLayer = secondStyle.layers.find(
+      (layer) => layer.id === firstFilteredLayer?.id
+    );
+
     expect(firstStyle.layers[0]).not.toBe(secondStyle.layers[0]);
-    expect(firstStyle.layers[0].filter).not.toBe(secondStyle.layers[0].filter);
-    expect(secondStyle.layers[0].filter).toEqual(firstStyle.layers[0].filter);
+    expect(firstFilteredLayer).toBeDefined();
+    expect(secondFilteredLayer).toBeDefined();
+    expect(firstFilteredLayer.filter).not.toBe(secondFilteredLayer.filter);
+    expect(secondFilteredLayer.filter).toEqual(firstFilteredLayer.filter);
 
-    firstStyle.layers[0].filter.push(mutationMarker);
+    firstFilteredLayer.filter.push(mutationMarker);
 
-    expect(secondStyle.layers[0].filter).not.toContainEqual(mutationMarker);
+    expect(secondFilteredLayer.filter).not.toContainEqual(mutationMarker);
   });
 
   it("initializes MapLibre with the poster background palette", async () => {
@@ -2220,8 +2231,8 @@ describe("map helpers", () => {
       "fill-color": "#d7dfd0"
     });
     expect(layerPaint("water")?.["fill-color"]).toBe("#d6e3e0");
-    expect(layerPaint("waterway_river")?.["line-color"]).toBe("#7ba8a8");
-    expect(layerPaint("waterway_other")?.["line-color"]).toBe("#7ba8a8");
+    expect(layerPaint("waterway_river")?.["line-color"]).toBe("#d6e3e0");
+    expect(layerPaint("waterway_other")?.["line-color"]).toBe("#d6e3e0");
     expect(layer("waterway_line_label")).toMatchObject({
       minzoom: 10,
       layout: expect.objectContaining({
@@ -2413,13 +2424,11 @@ describe("map helpers", () => {
     });
     const layerPaint = (id) => style.layers.find((layer) => layer.id === id)?.paint;
     const fixtureClasses = [
-      ["landuse_residential", "residential"],
       ["landuse_pitch", "pitch"],
       ["landuse_track", "track"],
       ["landuse_cemetery", "cemetery"],
       ["landuse_hospital", "hospital"],
       ["landuse_school", "school"],
-      ["missing-landuse-suburb", "suburb"],
       ["missing-landuse-retail", "retail"],
       ["missing-landuse-military", "military"],
       ["missing-landuse-bus-station", "bus_station"],
@@ -2434,6 +2443,9 @@ describe("map helpers", () => {
 
       expect(layerPaint(layerId)?.["fill-color"]).toBe(expectedGroup?.color);
     }
+
+    expect(layerPaint("landuse_residential")).toBeUndefined();
+    expect(layerPaint("missing-landuse-suburb")).toBeUndefined();
 
     expect(layerPaint("unknown-landuse-class")?.["fill-color"]).toBe("#d7dfd0");
     expect(layerPaint("mixed-landuse-any")?.["fill-color"]).toBe("#d7dfd0");
@@ -2654,14 +2666,9 @@ describe("map helpers", () => {
       return styleLayer && "filter" in styleLayer ? styleLayer.filter : undefined;
     };
 
-    expect(layer("native-residential-limited")).toMatchObject({ minzoom: 10, maxzoom: 12 });
-    expect(layerFilter("poster-landuse-residential")).toEqual([
-      "match",
-      ["get", "class"],
-      ["quarter", "neighbourhood"],
-      true,
-      false
-    ]);
+    expect(layer("native-residential-limited")).toBeUndefined();
+    expect(layer("native-suburb-reversed")).toBeUndefined();
+    expect(layer("poster-landuse-residential")).toBeUndefined();
     expect(layer("poster-landuse-commercial")).toBeUndefined();
     expect(layerFilter("poster-landuse-industrial")).toEqual([
       "match",
@@ -3092,14 +3099,7 @@ describe("map helpers", () => {
     );
     const mapStyle = maplibreMock.Map.mock.calls[0][0].style;
     expect(mapStyle.sources.openmaptiles.url).toBe("https://tiles.openfreemap.org/planet");
-    expect(mapStyle.layers.find((layer) => layer.id === "highway-shield")?.filter).toEqual([
-      "all",
-      ["<=", ["to-number", ["get", "ref_length"], 1000000000000], 6],
-      [">=", ["to-number", ["get", "rank"], -1000000000000], 7],
-      ["<", ["to-number", ["get", "rank"], 1000000000000], 20],
-      ["match", ["get", "network"], ["us-highway"], true, false],
-      [">=", ["to-number", ["get", "ref_length"], -1000000000000], 1]
-    ]);
+    expect(mapStyle.layers.find((layer) => layer.id === "highway-shield")).toBeUndefined();
 
     const map = maplibreMock.instances[0];
     expect(map.sources.get("route").lineMetrics).toBe(true);
@@ -3122,9 +3122,7 @@ describe("map helpers", () => {
     const finalStyleLayerIds = map.styleLayers.map((layer) => layer.id);
     const finalLayerIndex = (id) => finalStyleLayerIds.indexOf(id);
 
-    expect(finalLayerIndex("highway-shield")).toBeLessThan(
-      finalLayerIndex("poster-building-outline")
-    );
+    expect(finalLayerIndex("highway-shield")).toBe(-1);
     expect(finalStyleLayerIds.slice(finalLayerIndex("poster-building-outline"), -2)).toEqual([
       "poster-building-outline",
       "route-line-halo",

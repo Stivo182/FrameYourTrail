@@ -69,6 +69,7 @@ const POSTER_AREA_DEFINITIONS = Object.freeze([
     supplementalLayerId: "poster-landuse-residential",
     sourceLayer: "landuse",
     classification: "positive-filter",
+    hidden: true,
     classValues: Object.freeze(["residential", "suburb", "quarter", "neighbourhood"]),
     color: POSTER_BACKGROUND_MAP_PALETTE.residential
   }),
@@ -879,6 +880,10 @@ function createSupplementalPosterAreaLayers(layers, resolveSource) {
       return [];
     }
 
+    if ("hidden" in definition && definition.hidden) {
+      return [];
+    }
+
     const source = resolveSource(definition.sourceLayer);
 
     if (source === undefined) {
@@ -1331,6 +1336,13 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
   let layout = null;
   const posterFillPattern = type === "fill" ? getPosterFillPattern(id, paint) : null;
 
+  if (
+    (type === "fill" && isHiddenPosterAreaLayer(sourceLayer, layerObject.filter)) ||
+    isRoadShieldLayer(type, sourceLayer, id)
+  ) {
+    return [];
+  }
+
   if (type === "background") {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
@@ -1506,7 +1518,7 @@ function getPosterFillColor(sourceLayer, layerKey, filter) {
  */
 function getPosterLineColor(layerKey) {
   if (hasMapLayerToken(layerKey, ["water", "waterway"])) {
-    return POSTER_BACKGROUND_MAP_PALETTE.waterLine;
+    return POSTER_BACKGROUND_MAP_PALETTE.water;
   }
 
   if (isParkOutlineLayer(layerKey)) {
@@ -1575,6 +1587,28 @@ function getPosterAreaDefinition(sourceLayer, filter) {
   }
 
   return undefined;
+}
+
+/**
+ * @param {string} sourceLayer
+ * @param {unknown} filter
+ */
+function isHiddenPosterAreaLayer(sourceLayer, filter) {
+  const definition = getPosterAreaDefinition(sourceLayer, filter);
+  return Boolean(definition && "hidden" in definition && definition.hidden);
+}
+
+/**
+ * @param {string} type
+ * @param {string} sourceLayer
+ * @param {string} id
+ */
+function isRoadShieldLayer(type, sourceLayer, id) {
+  return (
+    type === "symbol" &&
+    sourceLayer === "transportation_name" &&
+    hasMapLayerToken(id.toLowerCase(), ["shield"])
+  );
 }
 
 /**
