@@ -1335,9 +1335,7 @@ function applyPosterBackgroundMapPaletteToLayers(layer) {
     paint["background-color"] = POSTER_BACKGROUND_MAP_PALETTE.background;
   } else if (type === "fill") {
     paint["fill-color"] = getPosterFillColor(sourceLayer, layerKey, layerObject.filter);
-    if (sourceLayer === "water") {
-      paint["fill-outline-color"] = POSTER_BACKGROUND_MAP_PALETTE.waterLine;
-    } else if (hasMapLayerToken(layerKey, ["building"])) {
+    if (hasMapLayerToken(layerKey, ["building"])) {
       paint["fill-outline-color"] = POSTER_BACKGROUND_MAP_PALETTE.buildingOutline;
     } else {
       delete paint["fill-outline-color"];

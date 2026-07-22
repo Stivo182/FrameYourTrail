@@ -2329,10 +2329,6 @@ describe("map helpers", () => {
     expect(layerPaint("landcover")).toEqual({
       "fill-color": "#dbe9e8"
     });
-    expect(layerPaint("water")).toEqual({
-      "fill-color": "#d6e3e0",
-      "fill-outline-color": "#7ba8a8"
-    });
     expect(layerPaint("building")).toMatchObject({
       "fill-color": "#d7d0c2",
       "fill-outline-color": "#ccc5bb"
