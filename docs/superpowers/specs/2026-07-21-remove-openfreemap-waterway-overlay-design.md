@@ -12,7 +12,8 @@ provided by the loaded native and supplemental style layers.
   insertion, cleanup, and related control flow from `src/render/map.js`.
 - Delete `src/render/waterway-detail.js` and its dedicated unit test.
 - Remove the overlay-only vector-tile helper and regression fixture, and remove
-  only the overlay-specific cases and imports from `tests/unit/map.test.js`.
+  only the overlay-specific cases and imports from
+  `tests/unit/map-renderer.test.js`.
 - Remove the z9 overlay bullet from `docs/product-spec.md`.
 - Move `@mapbox/vector-tile` and `pbf` from `dependencies` to
   `devDependencies` in `package.json` and keep `package-lock.json` consistent.
