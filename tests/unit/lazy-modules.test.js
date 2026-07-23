@@ -35,23 +35,31 @@ describe("lazy module boundaries", () => {
 
   it("keeps MapLibre CSS out of the initial app stylesheet", async () => {
     const mainSource = await readFile(join(process.cwd(), "src/main.js"), "utf8");
-    const mapSource = await readFile(join(process.cwd(), "src/render/map.js"), "utf8");
+    const mapLibreRendererSource = await readFile(
+      join(process.cwd(), "src/render/maplibre-route-renderer.js"),
+      "utf8"
+    );
     const mainExternalSpecifiers = await getReachableExternalStaticSpecifiers("src/main.js");
 
     expect(mainSource).not.toContain('import "maplibre-gl/dist/maplibre-gl.css"');
     expect(mainExternalSpecifiers).not.toContain("maplibre-gl/dist/maplibre-gl.css");
-    expect(mapSource).toContain('import("maplibre-gl/dist/maplibre-gl.css")');
-    expect(mapSource).toContain('import("maplibre-gl")');
+    expect(mapLibreRendererSource).toContain('import("maplibre-gl/dist/maplibre-gl.css")');
+    expect(mapLibreRendererSource).toContain('import("maplibre-gl")');
   });
 
   it("loads route map rendering dynamically from the main app module", async () => {
     const mainSource = await readFile(join(process.cwd(), "src/main.js"), "utf8");
+    const mapSource = await readFile(join(process.cwd(), "src/render/map.js"), "utf8");
     const staticImportSpecifiers = getStaticImportSpecifiers(mainSource);
     const reachableModules = await getReachableStaticModules("src/main.js");
 
     expect(staticImportSpecifiers).not.toContain("./render/map.js");
     expect(reachableModules).not.toContain(normalize("src/render/map.js"));
     expect(mainSource).toContain('import("./render/map.js")');
+    expect(mapSource).toContain('from "./maplibre-route-renderer.js"');
+    expect(mapSource).toContain('from "./route-map-data.js"');
+    expect(mapSource).toContain('from "./route-speed-style.js"');
+    expect(mapSource).toContain('from "./static-route-map.js"');
   });
 
   it("keeps aggregate locale dictionaries out of the initial app graph", async () => {

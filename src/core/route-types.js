@@ -41,6 +41,19 @@
  */
 
 /**
+ * Distance-indexed speed sample consumed by route renderers.
+ *
+ * @typedef {object} RouteSpeedSample
+ * @property {number} index
+ * @property {number} startDistanceFromStartMeters
+ * @property {number} distanceFromStartMeters
+ * @property {number} distanceMeters
+ * @property {number} durationSeconds
+ * @property {number} rawSpeedKmh
+ * @property {number} speedKmh
+ */
+
+/**
  * @typedef {object} RouteSourceMetadata
  * @property {string} format
  * @property {string | undefined} parser
