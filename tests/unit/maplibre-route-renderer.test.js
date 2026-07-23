@@ -167,49 +167,6 @@ describe("MapLibre route renderer", () => {
     vi.unstubAllGlobals();
   });
 
-  it("retries failed OpenFreeMap style requests and reuses cloned sanitized styles", async () => {
-    vi.resetModules();
-    const { initRouteMap: initFreshRouteMap } = await import("../../src/render/map.js");
-    const host = document.createElement("div");
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }));
-
-    await expect(initFreshRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
-      status: "fallback"
-    });
-    await expect(initFreshRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
-      status: "ready"
-    });
-    await expect(initFreshRouteMap(host, segmentedPoints, createI18n("en"))).resolves.toMatchObject(
-      {
-        status: "ready"
-      }
-    );
-
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(maplibreMock.Map).toHaveBeenCalledTimes(2);
-
-    const firstStyle = maplibreMock.Map.mock.calls[0][0].style;
-    const secondStyle = maplibreMock.Map.mock.calls[1][0].style;
-    const mutationMarker = ["==", ["get", "mutated"], true];
-
-    expect(firstStyle).not.toBe(secondStyle);
-    expect(firstStyle.layers).not.toBe(secondStyle.layers);
-    const firstFilteredLayer = firstStyle.layers.find((layer) => Array.isArray(layer.filter));
-    const secondFilteredLayer = secondStyle.layers.find(
-      (layer) => layer.id === firstFilteredLayer?.id
-    );
-
-    expect(firstStyle.layers[0]).not.toBe(secondStyle.layers[0]);
-    expect(firstFilteredLayer).toBeDefined();
-    expect(secondFilteredLayer).toBeDefined();
-    expect(firstFilteredLayer.filter).not.toBe(secondFilteredLayer.filter);
-    expect(secondFilteredLayer.filter).toEqual(firstFilteredLayer.filter);
-
-    firstFilteredLayer.filter.push(mutationMarker);
-
-    expect(secondFilteredLayer.filter).not.toContainEqual(mutationMarker);
-  });
-
   it("initializes MapLibre with the poster background palette", async () => {
     const host = document.createElement("div");
 

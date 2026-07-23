@@ -9,11 +9,12 @@ provided by the loaded native and supplemental style layers.
 ## Scope
 
 - Remove the overlay imports, planning, fetching, decoding, source/layer
-  insertion, cleanup, and related control flow from `src/render/map.js`.
+  insertion, cleanup, and related control flow from
+  `src/render/maplibre-route-renderer.js`.
 - Delete `src/render/waterway-detail.js` and its dedicated unit test.
 - Remove the overlay-only vector-tile helper and regression fixture, and remove
   only the overlay-specific cases and imports from
-  `tests/unit/map-renderer.test.js`.
+  `tests/unit/maplibre-route-renderer.test.js`.
 - Remove the z9 overlay bullet from `docs/product-spec.md`.
 - Move `@mapbox/vector-tile` and `pbf` from `dependencies` to
   `devDependencies` in `package.json` and keep `package-lock.json` consistent.
