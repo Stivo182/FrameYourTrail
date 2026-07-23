@@ -1,4 +1,4 @@
-import { getLayerType, normalizeMapTextLabelTier } from "./map-style-layer-order.js";
+import { normalizeMapTextLabelTier } from "./map-style-layer-order.js";
 import { getPosterAreaDefinition, isHiddenPosterAreaLayer } from "./openfreemap-poster-areas.js";
 import {
   OPENFREEMAP_ROAD_LABEL_MINZOOMS,
