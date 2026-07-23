@@ -1,4 +1,7 @@
 import { LANGUAGE_OPTIONS } from "../i18n/index.js";
+import siteConfig from "../../site.config.json";
+import { version as packageVersion } from "../../package.json";
+import { GITHUB_ICON } from "./github-icon.js";
 import { MAP_STYLE_OPTIONS, normalizeMapStyleId } from "./map-styles.js";
 import { PRINT_ICON } from "./toolbar-icons.js";
 
@@ -50,6 +53,14 @@ export function renderAppShell({
       </section>
       ${messagesHtml}
       ${contentHtml}
+      <footer class="app-footer">
+        <a href="${escapeHtml(siteConfig.repositoryUrl)}" target="_blank" rel="noopener noreferrer">
+          ${GITHUB_ICON}
+          <span>GitHub</span>
+        </a>
+        <span class="app-footer__separator" aria-hidden="true">·</span>
+        <span class="app-footer__version">v${escapeHtml(packageVersion)}</span>
+      </footer>
     </main>
   `;
 }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { version as packageVersion } from "../../package.json";
+import siteConfig from "../../site.config.json";
 import {
   renderAppShell,
   renderExportControls,
@@ -41,6 +43,48 @@ describe("app shell renderer", () => {
     expect(html).toContain("<details data-language-menu></details>");
     expect(html).toContain("<section data-messages></section>");
     expect(html).toContain("<section data-workspace></section>");
+  });
+
+  it("renders the GitHub repository link and package version after the application content", () => {
+    const html = renderAppShell({
+      i18n: i18n("en", {
+        "site.toolbarLabel": "Toolbar",
+        "site.tagline": "Make route posters",
+        "site.uploadFile": "Upload"
+      }),
+      hasPoster: false,
+      analysisModeSelectHtml: "",
+      mapStyleSelectHtml: "",
+      exportControlsHtml: "",
+      languageSelectHtml: "",
+      messagesHtml: "",
+      contentHtml: '<section data-testid="content"></section>'
+    });
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const content = container.querySelector('[data-testid="content"]');
+    const footer = container.querySelector(".app-footer");
+    const link = footer?.querySelector("a");
+    const icon = link?.querySelector('[data-icon="github"]');
+    const separator = footer?.querySelector(".app-footer__separator");
+    const version = footer?.querySelector(".app-footer__version");
+
+    expect(footer).toBeInstanceOf(HTMLElement);
+    expect(content?.nextElementSibling).toBe(footer);
+    expect(link?.textContent?.trim()).toBe("GitHub");
+    expect(link?.getAttribute("href")).toBe(siteConfig.repositoryUrl);
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(icon).toBeInstanceOf(SVGElement);
+    expect(icon?.getAttribute("aria-hidden")).toBe("true");
+    expect(icon?.getAttribute("focusable")).toBe("false");
+    expect(icon?.getAttribute("data-icon-library")).toBe("github");
+    expect(separator?.textContent).toBe("·");
+    expect(separator?.getAttribute("aria-hidden")).toBe("true");
+    expect(version?.textContent).toBe(`v${packageVersion}`);
+    expect(link?.nextElementSibling).toBe(separator);
+    expect(separator?.nextElementSibling).toBe(version);
   });
 
   it("limits drag-and-drop uploads to the empty state", () => {

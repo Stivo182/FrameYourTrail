@@ -105,6 +105,48 @@
   color: var(--color-muted);
 }
 
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: min(100%, var(--app-content-width));
+  max-width: var(--app-content-width);
+  margin: 18px auto 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.app-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.app-footer svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.app-footer__version {
+  font-variant-numeric: tabular-nums;
+}
+
+.app-footer a:hover {
+  color: var(--color-ink);
+}
+
+.app-footer a:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid rgb(15 118 110 / 24%);
+  outline-offset: 3px;
+}
+
 .app-shell--dragging {
   outline: 3px solid var(--color-accent);
   outline-offset: -10px;
@@ -472,7 +514,8 @@
 
   .toolbar,
   .messages,
-  .empty-state {
+  .empty-state,
+  .app-footer {
     display: none;
   }
 
