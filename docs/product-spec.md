@@ -591,10 +591,10 @@ Map requirements:
   keeps the `ice` class and `glacier`/`ice_shelf` subclasses, sand/beach/dune,
   rock/`bare_rock`/scree, the farmland group (`farmland`, `farm`, `orchard`,
   `vineyard`, and `plant_nursery`), and aeroway polygons distinct from park and
-  generic landcover fills; all current OpenMapTiles landuse areas receive
-  restrained semantic grouping across the residential hierarchy,
-  commercial/retail, industrial/infrastructure, civic/education/health,
-  recreation/cemetery, and quarry
+  generic landcover fills; residential hierarchy fills are suppressed, while
+  remaining OpenMapTiles landuse areas receive restrained semantic grouping
+  across commercial/retail, industrial/infrastructure,
+  civic/education/health, recreation/cemetery, and quarry
 - selected OpenFreeMap fill patterns, including wetland and pedestrian-area
   patterns, are preserved as restrained-opacity detail overlays above
   poster-colored base fills when they improve map detail
