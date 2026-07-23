@@ -74,6 +74,29 @@ test("starts and handles controls when localStorage is blocked", async ({ page }
   await expect(page.locator(".toolbar__tagline")).toHaveText("Verwandle jede Route in ein Poster");
 });
 
+test("links to the source repository from the application footer", async ({ page }) => {
+  await useSavedLanguage(page, "en");
+  await page.goto("/");
+  const [packageMetadata, siteConfig] = await Promise.all(
+    ["package.json", "site.config.json"].map(async (file) =>
+      JSON.parse(await readFile(resolve(file), "utf8"))
+    )
+  );
+
+  const sourceLink = page.locator(".app-footer a");
+  const sourceIcon = sourceLink.locator('[data-icon="github"]');
+  const appVersion = page.locator(".app-footer__version");
+
+  await expect(sourceLink).toBeVisible();
+  await expect(sourceLink).toHaveText("GitHub");
+  await expect(sourceIcon).toHaveAttribute("aria-hidden", "true");
+  await expect(sourceIcon).toHaveAttribute("focusable", "false");
+  await expect(appVersion).toHaveText(`v${packageMetadata.version}`);
+  await expect(sourceLink).toHaveAttribute("href", siteConfig.repositoryUrl);
+  await expect(sourceLink).toHaveAttribute("target", "_blank");
+  await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+});
+
 test("labels the toolbar language trigger with its purpose and active language", async ({
   page
 }) => {
@@ -483,6 +506,7 @@ test("prints the rendered poster from a separate toolbar action", async ({ page 
   await page.emulateMedia({ media: "print" });
 
   await expect(page.locator(".toolbar")).toHaveCSS("display", "none");
+  await expect(page.locator(".app-footer")).toHaveCSS("display", "none");
   await expect(page.locator(".app-shell")).toHaveCSS("padding-top", "0px");
   await expect(page.locator(".poster-scroll")).toHaveCSS("overflow-x", "visible");
   await expect(page.locator(".poster-scroll")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
