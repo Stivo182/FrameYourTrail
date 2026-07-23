@@ -14,7 +14,7 @@ import {
   points,
   segmentedPoints,
   speedSeries
-} from "./helpers/map-fixtures.js";
+} from "./helpers/map-route-fixtures.js";
 
 describe("map route helpers", () => {
   it("builds a muted poster red-orange-green MapLibre gradient from speed samples", () => {

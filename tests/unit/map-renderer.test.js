@@ -8,13 +8,13 @@ import {
   initRouteMap
 } from "../../src/render/map.js";
 import {
-  createOpenFreeMapStyleResponse,
   createSpeedSeriesForDistances,
   getRouteDistance,
   getRouteSegmentDistances,
   points,
   segmentedPoints
-} from "./helpers/map-fixtures.js";
+} from "./helpers/map-route-fixtures.js";
+import { createOpenFreeMapStyleResponse } from "./helpers/openfreemap-style-fixture.js";
 
 const maplibreMock = vi.hoisted(() => {
   /** @type {any[]} */
@@ -168,18 +168,22 @@ describe("MapLibre route renderer", () => {
   });
 
   it("retries failed OpenFreeMap style requests and reuses cloned sanitized styles", async () => {
+    vi.resetModules();
+    const { initRouteMap: initFreshRouteMap } = await import("../../src/render/map.js");
     const host = document.createElement("div");
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }));
 
-    await expect(initRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
+    await expect(initFreshRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
       status: "fallback"
     });
-    await expect(initRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
+    await expect(initFreshRouteMap(host, points, createI18n("en"))).resolves.toMatchObject({
       status: "ready"
     });
-    await expect(initRouteMap(host, segmentedPoints, createI18n("en"))).resolves.toMatchObject({
-      status: "ready"
-    });
+    await expect(initFreshRouteMap(host, segmentedPoints, createI18n("en"))).resolves.toMatchObject(
+      {
+        status: "ready"
+      }
+    );
 
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(maplibreMock.Map).toHaveBeenCalledTimes(2);

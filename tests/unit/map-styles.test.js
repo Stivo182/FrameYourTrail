@@ -7,7 +7,7 @@ import {
   loadMapStyle,
   normalizeMapStyleId
 } from "../../src/render/map-styles.js";
-import { createOpenFreeMapStyleResponse } from "./helpers/map-fixtures.js";
+import { createOpenFreeMapStyleResponse } from "./helpers/openfreemap-style-fixture.js";
 
 describe("map style catalog", () => {
   beforeEach(() => {

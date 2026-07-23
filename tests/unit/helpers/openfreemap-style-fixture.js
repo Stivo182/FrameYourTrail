@@ -1,46 +1,4 @@
-import { haversineMeters } from "../../../src/core/geo.js";
-
-export const points = [
-  { latitude: 43.1, longitude: 42.1, elevation: 620 },
-  { latitude: 43.2, longitude: 42.2, elevation: 740 }
-];
-
-export const speedSeries = [
-  {
-    index: 1,
-    startDistanceFromStartMeters: 0,
-    distanceFromStartMeters: 100,
-    distanceMeters: 100,
-    durationSeconds: 72,
-    rawSpeedKmh: 5,
-    speedKmh: 5
-  },
-  {
-    index: 2,
-    startDistanceFromStartMeters: 100,
-    distanceFromStartMeters: 200,
-    distanceMeters: 100,
-    durationSeconds: 36,
-    rawSpeedKmh: 10,
-    speedKmh: 10
-  },
-  {
-    index: 3,
-    startDistanceFromStartMeters: 200,
-    distanceFromStartMeters: 300,
-    distanceMeters: 100,
-    durationSeconds: 24,
-    rawSpeedKmh: 15,
-    speedKmh: 15
-  }
-];
-
-export const segmentedPoints = [
-  { latitude: 43.1, longitude: 42.1, elevation: 620 },
-  { latitude: 43.101, longitude: 42.102, elevation: 640 },
-  { latitude: 43.103, longitude: 42.105, elevation: 700 },
-  { latitude: 43.105, longitude: 42.108, elevation: 690 }
-];
+import { deepFreeze } from "./fixture-utils.js";
 
 export function createLanduseFillFixture(id, classValue) {
   return {
@@ -68,7 +26,7 @@ function createLandcoverFillFixture(id, propertyName, propertyValue) {
   };
 }
 
-export const NATIVE_LANDUSE_CLASS_FIXTURES = [
+export const NATIVE_LANDUSE_CLASS_FIXTURES = deepFreeze([
   ["landuse_residential", "residential"],
   ["landuse_pitch", "pitch"],
   ["landuse_track", "track"],
@@ -81,9 +39,9 @@ export const NATIVE_LANDUSE_CLASS_FIXTURES = [
   ["missing-landuse-bus-station", "bus_station"],
   ["missing-landuse-zoo", "zoo"],
   ["missing-landuse-quarry", "quarry"]
-];
+]);
 
-export const EXPECTED_LANDUSE_AREA_GROUPS = [
+export const EXPECTED_LANDUSE_AREA_GROUPS = deepFreeze([
   {
     id: "poster-landuse-commercial",
     classes: ["commercial", "retail"],
@@ -117,32 +75,32 @@ export const EXPECTED_LANDUSE_AREA_GROUPS = [
     classes: ["quarry"],
     color: "#EEE5DC"
   }
-];
+]);
 
-export const OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT = [
+export const OPENFREEMAP_NAME_TEXT_FIELD_CONTRACT = deepFreeze([
   "case",
   ["has", "name:nonlatin"],
   ["concat", ["get", "name:latin"], " ", ["get", "name:nonlatin"]],
   ["coalesce", ["get", "name_en"], ["get", "name:en"], ["get", "name"], ["get", "name:latin"]]
-];
+]);
 
-export const POSTER_LABEL_PAINT_CONTRACT = {
+export const POSTER_LABEL_PAINT_CONTRACT = deepFreeze({
   "text-color": "#5f6c61",
   "text-halo-color": "#fbfaf3",
   "text-halo-width": 1
-};
+});
 
-export const POSTER_WATER_LABEL_PAINT_CONTRACT = {
+export const POSTER_WATER_LABEL_PAINT_CONTRACT = deepFreeze({
   "text-color": "#416b73",
   "text-halo-color": "#fbfaf3",
   "text-halo-width": 1
-};
+});
 
-export const POSTER_TRAIL_LABEL_PAINT_CONTRACT = {
+export const POSTER_TRAIL_LABEL_PAINT_CONTRACT = deepFreeze({
   "text-color": "#8f8b63",
   "text-halo-color": "#fbfaf3",
   "text-halo-width": 1
-};
+});
 
 const openFreeMapStyle = {
   version: 8,
@@ -631,40 +589,6 @@ const openFreeMapStyle = {
     }
   ]
 };
-
-export function getRouteSegmentDistances(routePoints) {
-  const distances = [];
-
-  for (let index = 1; index < routePoints.length; index += 1) {
-    distances.push(haversineMeters(routePoints[index - 1], routePoints[index]));
-  }
-
-  return distances;
-}
-
-export function getRouteDistance(routePoints) {
-  return getRouteSegmentDistances(routePoints).reduce((total, distance) => total + distance, 0);
-}
-
-export function createSpeedSeriesForDistances(distances, speedsKmh) {
-  let distanceFromStartMeters = 0;
-
-  return distances.map((distanceMeters, index) => {
-    const startDistanceFromStartMeters = distanceFromStartMeters;
-    distanceFromStartMeters += distanceMeters;
-    const speedKmh = speedsKmh[index] ?? speedsKmh.at(-1) ?? 0;
-
-    return {
-      index: index + 1,
-      startDistanceFromStartMeters,
-      distanceFromStartMeters,
-      distanceMeters,
-      durationSeconds: (distanceMeters / Math.max(speedKmh, 0.1)) * 3.6,
-      rawSpeedKmh: speedKmh,
-      speedKmh
-    };
-  });
-}
 
 export function cloneOpenFreeMapStyle() {
   return JSON.parse(JSON.stringify(openFreeMapStyle));

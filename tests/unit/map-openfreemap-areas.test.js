@@ -6,7 +6,7 @@ import {
   cloneOpenFreeMapStyle,
   createLanduseFillFixture,
   createOpenFreeMapStyleResponse
-} from "./helpers/map-fixtures.js";
+} from "./helpers/openfreemap-style-fixture.js";
 
 describe("OpenFreeMap poster areas", () => {
   beforeEach(() => {
@@ -71,18 +71,9 @@ describe("OpenFreeMap poster areas", () => {
       fetcher: vi.fn(async () => createOpenFreeMapStyleResponse())
     });
     const layerPaint = (id) => style.layers.find((layer) => layer.id === id)?.paint;
-    const fixtureClasses = [
-      ["landuse_pitch", "pitch"],
-      ["landuse_track", "track"],
-      ["landuse_cemetery", "cemetery"],
-      ["landuse_hospital", "hospital"],
-      ["landuse_school", "school"],
-      ["missing-landuse-retail", "retail"],
-      ["missing-landuse-military", "military"],
-      ["missing-landuse-bus-station", "bus_station"],
-      ["missing-landuse-zoo", "zoo"],
-      ["missing-landuse-quarry", "quarry"]
-    ];
+    const fixtureClasses = NATIVE_LANDUSE_CLASS_FIXTURES.filter(([, classValue]) =>
+      EXPECTED_LANDUSE_AREA_GROUPS.some((group) => group.classes.includes(classValue))
+    );
 
     for (const [layerId, classValue] of fixtureClasses) {
       const expectedGroup = EXPECTED_LANDUSE_AREA_GROUPS.find((group) =>
