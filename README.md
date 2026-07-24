@@ -3,6 +3,14 @@
 Frame Your Trail is a browser app for turning GPX, TCX, FIT, and supported
 GPX-like XML route files into printable trail posters.
 
+<p align="center">
+  <img
+    src="docs\screenshots\poster-preview-desktop.jpg"
+    alt="Frame Your Trail poster preview"
+    width="600"
+  >
+</p>
+
 ## Highlights
 
 - Local file import with browser-only parsing and rendering.
