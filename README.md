@@ -1,15 +1,16 @@
 # Frame Your Trail
 
-Frame Your Trail is a browser app for turning GPX, TCX, FIT, and supported
-GPX-like XML route files into printable trail posters.
+**Turn your GPS tracks into print-ready trail posters - entirely in your browser.**
 
-<p align="center">
-  <img
-    src="docs\screenshots\poster-preview-desktop.jpg"
-    alt="Frame Your Trail poster preview"
-    width="600"
-  >
-</p>
+[![Release](https://img.shields.io/github/release/Stivo182/FrameYourTrail.svg)](https://github.com/Stivo182/FrameYourTrail/releases)
+[![Tests](https://github.com/Stivo182/FrameYourTrail/actions/workflows/verify.yml/badge.svg)](https://github.com/Stivo182/FrameYourTrail/actions/workflows/verify.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+## Examples
+| OpenFreeMap | OSM Standard | CyclOSM | 
+|---|---|---| 
+| ![OpenFreeMap](docs/screenshots/poster-preview-desktop-ofm) | ![OSM Standard](docs/screenshots/poster-preview-desktop-osm) | ![CyclOSM](docs/screenshots/poster-preview-desktop-cycl) | 
+| Muted OpenFreeMap style matched to the poster palette | Familiar general-purpose OpenStreetMap tiles | Bike-oriented tiles with cycling route context |
 
 ## Highlights
 
