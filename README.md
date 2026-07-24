@@ -8,10 +8,29 @@
 
 ## Examples
 
-| OpenFreeMap                                                     | OSM Standard                                                     | CyclOSM                                                      |
-| --------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| ![OpenFreeMap](docs/screenshots/poster-preview-desktop-ofm.jpg) | ![OSM Standard](docs/screenshots/poster-preview-desktop-osm.jpg) | ![CyclOSM](docs/screenshots/poster-preview-desktop-cycl.jpg) |
-| Muted OpenFreeMap style matched to the poster palette           | Familiar general-purpose OpenStreetMap tiles                     | Bike-oriented tiles with cycling route context               |
+<table>
+  <tr>
+    <th width="33.33%">OpenFreeMap</th>
+    <th width="33.33%">OSM Standard</th>
+    <th width="33.33%">CyclOSM</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="docs/screenshots/poster-preview-desktop-ofm.jpg" alt="OpenFreeMap" width="100%">
+    </td>
+    <td>
+      <img src="docs/screenshots/poster-preview-desktop-osm.jpg" alt="OSM Standard" width="100%">
+    </td>
+    <td>
+      <img src="docs/screenshots/poster-preview-desktop-cycl.jpg" alt="CyclOSM" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td>Muted OpenFreeMap style matched to the poster palette</td>
+    <td>Familiar general-purpose OpenStreetMap tiles</td>
+    <td>Bike-oriented tiles with cycling route context</td>
+  </tr>
+</table>
 
 ## Highlights
 
