@@ -9,7 +9,7 @@
 ## Examples
 | OpenFreeMap | OSM Standard | CyclOSM | 
 |---|---|---| 
-| ![OpenFreeMap](docs/screenshots/poster-preview-desktop-ofm) | ![OSM Standard](docs/screenshots/poster-preview-desktop-osm) | ![CyclOSM](docs/screenshots/poster-preview-desktop-cycl) | 
+| ![OpenFreeMap](docs/screenshots/poster-preview-desktop-ofm.jpg) | ![OSM Standard](docs/screenshots/poster-preview-desktop-osm.jpg) | ![CyclOSM](docs/screenshots/poster-preview-desktop-cycl.jpg) | 
 | Muted OpenFreeMap style matched to the poster palette | Familiar general-purpose OpenStreetMap tiles | Bike-oriented tiles with cycling route context |
 
 ## Highlights
