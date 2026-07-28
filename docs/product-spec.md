@@ -93,10 +93,12 @@ Production build-output checks must verify that canonical links, social preview
 metadata, local script/style asset links, `robots.txt`, and `sitemap.xml` are
 consistent with the configured public base path.
 
-The GitHub Pages workflow must run the full `npm run verify` quality gate before
-building and publishing the Pages artifact. The deploy artifact is then rebuilt
-with the canonical site base path and checked with `npm run test:build`, followed
-by `npm run test:pages` browser smoke testing against the Pages subpath.
+The GitHub Pages workflow deploys automatically when a stable GitHub Release is
+published and may also be started manually. It must run the full `npm run verify`
+quality gate before building and publishing the Pages artifact. The deploy
+artifact is then rebuilt with the canonical site base path and checked with
+`npm run test:build`, followed by `npm run test:pages` browser smoke testing
+against the Pages subpath.
 
 The Pages `verify` job runs on Windows to match the committed Windows Chromium
 visual snapshot baseline. The Pages `build` and `deploy` jobs remain on Ubuntu.

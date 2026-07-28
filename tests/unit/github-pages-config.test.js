@@ -59,6 +59,15 @@ describe("GitHub Pages configuration", () => {
     expect(workflow).toContain("actions/deploy-pages");
   });
 
+  it("deploys automatically only for stable GitHub releases", () => {
+    const workflow = readFileSync(pagesWorkflowPath, "utf8");
+    const triggers = workflow.match(/^on:\n(?<body>[\s\S]*?)\npermissions:/m)?.groups?.body ?? "";
+
+    expect(triggers).toMatch(/^[ ]{2}release:\n[ ]{4}types: \[released\]$/m);
+    expect(triggers).toMatch(/^[ ]{2}workflow_dispatch:$/m);
+    expect(triggers).not.toMatch(/^[ ]{2}push:$/m);
+  });
+
   it("runs pull request checks through the reusable full verification gate", () => {
     const hasVerifyWorkflow = existsSync(verifyWorkflowPath);
     const workflow = hasVerifyWorkflow ? readFileSync(verifyWorkflowPath, "utf8") : "";
