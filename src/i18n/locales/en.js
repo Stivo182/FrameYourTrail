@@ -9,8 +9,10 @@ const en = {
     exportingPoster: "Exporting poster…",
     clipboard: "Clipboard",
     printPoster: "Print",
-    emptyTitle: "Upload a route file to build a route infographic",
-    emptyBody: "Map, stats, charts, and export become available after file analysis.",
+    emptyTitle: "Turn your route into a trail poster",
+    emptyBody: "Drop a route file here or choose one to begin.",
+    emptyFormats: "Supports GPX, GPX-like XML, TCX, and FIT.",
+    emptyPrivacy: "Your route file stays in your browser.",
     languageLabel: "Language"
   },
   messages: {

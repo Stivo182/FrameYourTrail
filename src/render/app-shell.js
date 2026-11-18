@@ -41,10 +41,7 @@ export function renderAppShell({
           <p class="toolbar__tagline">${escapeHtml(i18n.t("site.tagline"))}</p>
         </div>
         <div class="toolbar__actions">
-          <label class="upload-box">
-            <input data-file-input type="file" accept=".gpx,.tcx,.fit,application/gpx+xml,application/vnd.garmin.tcx+xml,application/xml,text/xml,application/octet-stream" />
-            <span>${escapeHtml(i18n.t("site.uploadFile"))}</span>
-          </label>
+          ${hasPoster ? renderUploadControl(i18n) : ""}
           ${analysisModeSelectHtml}
           ${mapStyleSelectHtml}
           ${exportControlsHtml}
@@ -157,9 +154,35 @@ function renderMapStyleOption(option, selectedId, i18n) {
 export function renderEmptyState(i18n) {
   return `
     <section class="empty-state" data-testid="empty-state" data-drop-zone>
-      <h2>${escapeHtml(i18n.t("site.emptyTitle"))}</h2>
-      <p>${escapeHtml(i18n.t("site.emptyBody"))}</p>
+      <div class="empty-state__content">
+        <h2>${escapeHtml(i18n.t("site.emptyTitle"))}</h2>
+        <p class="empty-state__intro">${escapeHtml(i18n.t("site.emptyBody"))}</p>
+        ${renderUploadControl(i18n, {
+          className: "upload-box upload-box--hero",
+          describedBy: "route-file-formats route-file-privacy"
+        })}
+        <p class="empty-state__formats" id="route-file-formats">${escapeHtml(i18n.t("site.emptyFormats"))}</p>
+        <p class="empty-state__privacy" id="route-file-privacy">${escapeHtml(i18n.t("site.emptyPrivacy"))}</p>
+      </div>
     </section>
+  `;
+}
+
+/**
+ * @param {I18nLike} i18n
+ * @param {{ className?: string, describedBy?: string }} [options]
+ */
+function renderUploadControl(i18n, options = {}) {
+  const className = options.className ?? "upload-box";
+  const describedBy = options.describedBy
+    ? ` aria-describedby="${escapeHtml(options.describedBy)}"`
+    : "";
+
+  return `
+    <label class="${escapeHtml(className)}" for="route-file-input">
+      <input id="route-file-input" data-file-input type="file" accept=".gpx,.tcx,.fit,application/gpx+xml,application/vnd.garmin.tcx+xml,application/xml,text/xml,application/octet-stream"${describedBy} />
+      <span>${escapeHtml(i18n.t("site.uploadFile"))}</span>
+    </label>
   `;
 }
 

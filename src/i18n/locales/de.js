@@ -9,8 +9,10 @@ const de = {
     exportingPoster: "Poster wird exportiert…",
     clipboard: "Zwischenablage",
     printPoster: "Drucken",
-    emptyTitle: "Routendatei hochladen, um eine Routeninfografik zu erstellen",
-    emptyBody: "Karte, Statistiken, Diagramme und Export sind nach der Dateianalyse verfügbar.",
+    emptyTitle: "Verwandle deine Route in ein Abenteuerposter",
+    emptyBody: "Ziehe eine Routendatei hierher oder wähle eine aus.",
+    emptyFormats: "Unterstützt werden GPX, GPX-ähnliches XML, TCX und FIT.",
+    emptyPrivacy: "Deine Routendatei bleibt in deinem Browser.",
     languageLabel: "Sprache"
   },
   messages: {

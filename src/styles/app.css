@@ -55,6 +55,15 @@
   gap: 18px;
 }
 
+.app-shell:not(.app-shell--has-poster) {
+  background: var(--color-paper);
+  color: var(--color-forest);
+}
+
+.app-shell:not(.app-shell--has-poster) .toolbar__tagline {
+  color: var(--color-editorial-muted);
+}
+
 .upload-box {
   display: inline-flex;
   min-height: 38px;
@@ -74,6 +83,7 @@
   position: absolute;
   inline-size: 1px;
   block-size: 1px;
+  clip-path: inset(50%);
   opacity: 0;
 }
 
@@ -83,26 +93,83 @@
 }
 
 .empty-state {
-  display: grid;
-  min-height: 420px;
-  place-content: center;
+  position: relative;
+  display: flex;
+  min-height: clamp(500px, 68vh, 680px);
+  align-items: center;
   width: min(100%, var(--app-content-width));
   max-width: var(--app-content-width);
   margin: 0 auto;
-  border: 1px dashed var(--color-line);
-  border-radius: var(--radius-panel);
-  background: rgb(255 255 255 / 68%);
-  text-align: center;
+  overflow: hidden;
+  border: 1px solid #b9c0b6;
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgb(244 241 233 / 96%) 0%, rgb(244 241 233 / 84%) 42%, transparent 76%),
+    url("../assets/header-watercolor-lake.webp") center / cover no-repeat;
+  padding: clamp(24px, 6vw, 72px);
+  box-shadow: 0 24px 60px rgb(23 53 46 / 10%);
+}
+
+.empty-state__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(100%, 560px);
+  gap: 16px;
+  border: 1px solid rgb(23 53 46 / 14%);
+  border-radius: 18px;
+  background: rgb(255 253 248 / 90%);
+  padding: clamp(24px, 4vw, 44px);
+  box-shadow: 0 18px 48px rgb(23 53 46 / 12%);
+  backdrop-filter: blur(3px);
 }
 
 .empty-state h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
+  margin: 0;
+  color: var(--color-forest);
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: 1.02;
+  text-wrap: balance;
 }
 
 .empty-state p {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--color-editorial-muted);
+}
+
+.empty-state__intro {
+  max-width: 42ch;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.upload-box--hero {
+  min-block-size: 48px;
+  width: fit-content;
+  margin-block-start: 4px;
+  border-color: var(--color-primary);
+  border-radius: 12px;
+  background: var(--color-primary);
+  font-size: 16px;
+  padding-inline: 24px;
+}
+
+.upload-box--hero:hover {
+  border-color: #0f6258;
+  background: #0f6258;
+}
+
+.empty-state__formats {
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.empty-state__privacy {
+  border-block-start: 1px solid rgb(23 53 46 / 12%);
+  padding-block-start: 14px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .app-footer {
@@ -147,9 +214,14 @@
   outline-offset: 3px;
 }
 
+.app-shell:not(.app-shell--has-poster) .app-footer {
+  color: var(--color-editorial-muted);
+}
+
 .app-shell--dragging {
-  outline: 3px solid var(--color-accent);
-  outline-offset: -10px;
+  border-color: var(--color-accent);
+  outline: 4px solid rgb(20 117 104 / 32%);
+  outline-offset: -8px;
 }
 
 .messages,
@@ -496,6 +568,24 @@
   padding: 0;
 }
 
+.app-shell:not(.app-shell--has-poster) .toolbar {
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.app-shell:not(.app-shell--has-poster) .toolbar__identity {
+  min-inline-size: 0;
+}
+
+.app-shell:not(.app-shell--has-poster) .toolbar h1,
+.app-shell:not(.app-shell--has-poster) .toolbar__tagline {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 @media (width <= 900px) {
   .app-shell--has-poster .toolbar {
     position: static;
@@ -508,6 +598,34 @@
 }
 
 @media (width <= 480px) {
+  .app-shell:not(.app-shell--has-poster) {
+    padding: 16px;
+  }
+
+  .app-shell:not(.app-shell--has-poster) .toolbar {
+    gap: 12px;
+  }
+
+  .empty-state {
+    min-height: 500px;
+    border-radius: 18px;
+    background-position: 58% center;
+    padding: 16px;
+  }
+
+  .empty-state__content {
+    gap: 14px;
+    padding: 22px 18px;
+  }
+
+  .empty-state h2 {
+    font-size: clamp(30px, 11vw, 42px);
+  }
+
+  .upload-box--hero {
+    width: 100%;
+  }
+
   .metric-source-menu,
   .map-style-menu {
     inline-size: min(100%, calc(100vw - 48px));
@@ -518,6 +636,13 @@
     inset-inline: 0 auto;
     inline-size: min(100%, calc(100vw - 48px));
     min-inline-size: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .upload-box,
+  .language-menu summary {
+    min-block-size: 44px;
   }
 }
 

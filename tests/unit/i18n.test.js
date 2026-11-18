@@ -155,6 +155,26 @@ describe("i18n", () => {
     }
   });
 
+  it("localizes the empty upload formats and browser-only file handling copy", () => {
+    expect(LOCALES.ru.site.emptyFormats).toBe("Поддерживаются GPX, GPX-подобный XML, TCX и FIT.");
+    expect(LOCALES.en.site.emptyFormats).toBe("Supports GPX, GPX-like XML, TCX, and FIT.");
+    expect(LOCALES.es.site.emptyFormats).toBe("Admite GPX, XML similar a GPX, TCX y FIT.");
+    expect(LOCALES.fr.site.emptyFormats).toBe(
+      "Formats pris en charge : GPX, XML similaire à GPX, TCX et FIT."
+    );
+    expect(LOCALES.de.site.emptyFormats).toBe(
+      "Unterstützt werden GPX, GPX-ähnliches XML, TCX und FIT."
+    );
+
+    expect(LOCALES.ru.site.emptyPrivacy).toBe("Файл маршрута остаётся в вашем браузере.");
+    expect(LOCALES.en.site.emptyPrivacy).toBe("Your route file stays in your browser.");
+    expect(LOCALES.es.site.emptyPrivacy).toBe("El archivo de tu ruta permanece en tu navegador.");
+    expect(LOCALES.fr.site.emptyPrivacy).toBe(
+      "Votre fichier d’itinéraire reste dans votre navigateur."
+    );
+    expect(LOCALES.de.site.emptyPrivacy).toBe("Deine Routendatei bleibt in deinem Browser.");
+  });
+
   it("does not keep a hidden poster metrics heading translation", () => {
     for (const language of SUPPORTED_LANGUAGES) {
       expect(LOCALES[language].poster.statsTitle).toBeUndefined();

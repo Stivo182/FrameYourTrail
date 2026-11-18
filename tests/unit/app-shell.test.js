@@ -113,6 +113,48 @@ describe("app shell renderer", () => {
     expect(loadedHtml).not.toContain("data-drop-zone");
   });
 
+  it("renders one accessible upload action in the localized empty hero", () => {
+    const translations = {
+      "site.toolbarLabel": "Toolbar <main>",
+      "site.tagline": "Make <route> posters",
+      "site.uploadFile": "Choose & build",
+      "site.emptyTitle": "Your <route> poster",
+      "site.emptyBody": "Drop it here & begin.",
+      "site.emptyFormats": "GPX, XML, TCX & FIT.",
+      "site.emptyPrivacy": "Your file stays in the <browser>."
+    };
+    const html = renderAppShell({
+      i18n: i18n("en", translations),
+      hasPoster: false,
+      analysisModeSelectHtml: "",
+      mapStyleSelectHtml: "",
+      exportControlsHtml: "",
+      languageSelectHtml: "<details data-language-menu></details>",
+      messagesHtml: "",
+      contentHtml: renderEmptyState(i18n("en", translations))
+    });
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const input = container.querySelector("[data-file-input]");
+    const uploadLabel = container.querySelector('label[for="route-file-input"]');
+
+    expect(container.querySelectorAll("[data-file-input]")).toHaveLength(1);
+    expect(container.querySelector(".toolbar [data-file-input]")).toBeNull();
+    expect(container.querySelector(".toolbar [data-language-menu]")).not.toBeNull();
+    expect(container.querySelector("[data-drop-zone]")).not.toBeNull();
+    expect(input?.getAttribute("id")).toBe("route-file-input");
+    expect(input?.getAttribute("accept")).toBe(
+      ".gpx,.tcx,.fit,application/gpx+xml,application/vnd.garmin.tcx+xml,application/xml,text/xml,application/octet-stream"
+    );
+    expect(input?.getAttribute("aria-describedby")).toBe("route-file-formats route-file-privacy");
+    expect(uploadLabel?.textContent?.trim()).toBe("Choose & build");
+    expect(container.innerHTML).toContain("Your &lt;route&gt; poster");
+    expect(container.innerHTML).toContain("Drop it here &amp; begin.");
+    expect(container.innerHTML).toContain("GPX, XML, TCX &amp; FIT.");
+    expect(container.innerHTML).toContain("Your file stays in the &lt;browser&gt;.");
+  });
+
   it("renders errors before warnings and escapes message text", () => {
     const html = renderMessages(
       {

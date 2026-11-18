@@ -9,9 +9,10 @@ const es = {
     exportingPoster: "Exportando póster…",
     clipboard: "Portapapeles",
     printPoster: "Imprimir",
-    emptyTitle: "Carga un archivo de ruta para crear una infografía",
-    emptyBody:
-      "Mapa, estadísticas, gráficos y exportación estarán disponibles tras analizar el archivo.",
+    emptyTitle: "Convierte tu ruta en un póster de aventura",
+    emptyBody: "Arrastra aquí un archivo de ruta o elige uno para empezar.",
+    emptyFormats: "Admite GPX, XML similar a GPX, TCX y FIT.",
+    emptyPrivacy: "El archivo de tu ruta permanece en tu navegador.",
     languageLabel: "Idioma"
   },
   messages: {

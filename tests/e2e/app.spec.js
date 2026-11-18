@@ -108,6 +108,54 @@ test("labels the toolbar language trigger with its purpose and active language",
   );
 });
 
+test("presents one accessible route upload action in the empty editorial hero", async ({
+  page
+}) => {
+  await useSavedLanguage(page, "en");
+  await page.goto("/");
+
+  const emptyState = page.locator("[data-testid='empty-state']");
+  const fileInput = page.locator("[data-file-input]");
+  const uploadAction = page.locator('label[for="route-file-input"]');
+
+  await expect(emptyState.getByRole("heading", { level: 2 })).toHaveText(
+    "Turn your route into a trail poster"
+  );
+  await expect(emptyState).toContainText("Drop a route file here or choose one to begin.");
+  await expect(emptyState).toContainText("Supports GPX, GPX-like XML, TCX, and FIT.");
+  await expect(emptyState).toContainText("Your route file stays in your browser.");
+  await expect(fileInput).toHaveCount(1);
+  await expect(page.locator(".toolbar [data-file-input]")).toHaveCount(0);
+  await expect(fileInput).toHaveAccessibleName("Choose file");
+  await expect(fileInput).toHaveAccessibleDescription(
+    /Supports GPX, GPX-like XML, TCX, and FIT.*Your route file stays in your browser/
+  );
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await uploadAction.click();
+  await fileChooserPromise;
+});
+
+test("keeps the empty upload experience reachable at 320 CSS pixels", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await useSavedLanguage(page, "en");
+  await page.goto("/");
+
+  const uploadAction = page.locator('label[for="route-file-input"]');
+  const uploadBox = await uploadAction.boundingBox();
+
+  expect(uploadBox).not.toBeNull();
+  expect(uploadBox?.height).toBeGreaterThanOrEqual(44);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
+
+  await page.locator("[data-file-input]").focus();
+  await expect
+    .poll(() => uploadAction.evaluate((element) => getComputedStyle(element).outlineStyle))
+    .not.toBe("none");
+});
+
 test("keeps the toolbar language trigger compact on narrow screens", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await useSavedLanguage(page, "en");
@@ -1203,18 +1251,22 @@ test("keeps fallback shell usable while the selected language dictionary loads",
   });
 
   await page.goto("/");
-  await expect(page.locator("[data-testid='empty-state']")).toContainText("Upload a route file");
+  await expect(page.locator("[data-testid='empty-state']")).toContainText(
+    "Turn your route into a trail poster"
+  );
 
   await selectToolbarLanguage(page, "ru", /Русский/);
   await expect.poll(() => ruLocaleRequests).toBe(1);
   await page.waitForTimeout(250);
-  await expect(page.locator("[data-testid='empty-state']")).toContainText("Upload a route file");
+  await expect(page.locator("[data-testid='empty-state']")).toContainText(
+    "Turn your route into a trail poster"
+  );
   await expect(page.locator("[data-file-input]")).toBeEnabled();
   await expectToolbarLanguage(page, "ru");
 
   releaseRuLocale();
   await expect(page.locator("[data-testid='empty-state']")).toContainText(
-    "Загрузите файл маршрута, чтобы собрать инфографику"
+    "Превратите маршрут в постер для приключений"
   );
 });
 

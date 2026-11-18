@@ -28,6 +28,25 @@ test("matches screenshot for mobile route-report", async ({ page }) => {
   });
 });
 
+test("matches screenshot for the empty upload shell", async ({ page }) => {
+  await useSavedLanguage(page, "ru");
+  await page.goto("/");
+  await expect(page.locator("[data-testid='empty-state']")).toBeVisible();
+  await expect(page.locator(".app-shell")).toHaveScreenshot("empty-upload-shell.png", {
+    animations: "disabled"
+  });
+});
+
+test("matches screenshot for the mobile empty upload shell", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await useSavedLanguage(page, "ru");
+  await page.goto("/");
+  await expect(page.locator("[data-testid='empty-state']")).toBeVisible();
+  await expect(page.locator(".app-shell")).toHaveScreenshot("empty-upload-shell-mobile.png", {
+    animations: "disabled"
+  });
+});
+
 test("matches screenshot for invalid upload error state", async ({ page }) => {
   await useSavedLanguage(page, "ru");
   await page.goto("/");

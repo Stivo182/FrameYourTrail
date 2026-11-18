@@ -14,6 +14,17 @@ test("has no detectable accessibility violations in the empty state", async ({ p
   await expectNoA11yViolations(page);
 });
 
+test("has no detectable accessibility violations in the narrow empty state", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto("/");
+  await expect(page.locator("[data-testid='empty-state']")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
+
+  await expectNoA11yViolations(page);
+});
+
 test("has no detectable accessibility violations after GPX upload", async ({ page }) => {
   await abortOpenFreeMapTiles(page);
   await page.goto("/");

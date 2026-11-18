@@ -9,9 +9,10 @@ const fr = {
     exportingPoster: "Export du poster…",
     clipboard: "Presse-papiers",
     printPoster: "Imprimer",
-    emptyTitle: "Importez un fichier d'itinéraire pour créer une infographie",
-    emptyBody:
-      "Carte, statistiques, graphiques et export seront disponibles après l'analyse du fichier.",
+    emptyTitle: "Transformez votre parcours en affiche d’aventure",
+    emptyBody: "Déposez un fichier d’itinéraire ici ou choisissez-en un pour commencer.",
+    emptyFormats: "Formats pris en charge : GPX, XML similaire à GPX, TCX et FIT.",
+    emptyPrivacy: "Votre fichier d’itinéraire reste dans votre navigateur.",
     languageLabel: "Langue"
   },
   messages: {
