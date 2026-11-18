@@ -980,19 +980,20 @@ test("keeps the scrollable toolbar language menu panel inside the viewport", asy
   await expect(page.locator("[data-language-menu]")).toHaveAttribute("open", "");
   await expect(page.locator(".language-menu__panel")).toBeVisible();
 
-  const panelBox = await page.locator(".language-menu__panel").boundingBox();
+  const panel = page.locator(".language-menu__panel");
 
-  if (!panelBox) {
-    throw new Error("Language menu layout is not measurable");
-  }
+  await expect
+    .poll(async () => {
+      const box = await panel.boundingBox();
+      return box !== null && box.x >= 0 && box.x + box.width <= 620;
+    })
+    .toBe(true);
 
-  expect(panelBox.x).toBeGreaterThanOrEqual(0);
-  expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(620);
   expect(
-    await page.locator(".language-menu__panel").evaluate((panel) => {
-      const box = panel.getBoundingClientRect();
+    await panel.evaluate((node) => {
+      const box = node.getBoundingClientRect();
       const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-      return hit ? panel.contains(hit) : false;
+      return hit ? node.contains(hit) : false;
     })
   ).toBe(true);
 });
