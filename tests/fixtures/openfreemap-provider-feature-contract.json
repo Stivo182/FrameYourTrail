@@ -1,9 +1,9 @@
 {
   "version": 1,
   "metadata": {
-    "tilesetUrlTemplate": "https://tiles.openfreemap.org/planet/20260621_080001_pt/{z}/{x}/{y}.pbf",
-    "capturedOn": "2026-07-20",
-    "decoder": "@mapbox/vector-tile 2.0.4",
+    "tilesetUrlTemplate": "https://tiles.openfreemap.org/planet/20261115_080022_pt/{z}/{x}/{y}.pbf",
+    "capturedOn": "2026-11-18",
+    "decoder": "@mapbox/vector-tile 2.0.5",
     "curatedScope": "Decoded representative aerialway, ferry, motorway name, and lighthouse POI features for poster provider extension contracts"
   },
   "features": [
@@ -14,15 +14,15 @@
         "z": 14,
         "x": 14214,
         "y": 6528,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/14214/6528.pbf"
       },
       "sourceLayer": "transportation",
-      "featureIndex": "27",
-      "featureId": "416666932",
+      "featureIndex": "58",
+      "featureId": "13215859312",
       "geometryType": "LineString",
       "properties": {
         "class": "aerialway",
-        "subclass": "cable_car",
+        "subclass": "gondola",
         "oneway": 1
       }
     },
@@ -33,16 +33,16 @@
         "z": 14,
         "x": 14214,
         "y": 6528,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14214/6528.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/14214/6528.pbf"
       },
       "sourceLayer": "transportation_name",
-      "featureIndex": "4",
-      "featureId": "416666930",
+      "featureIndex": "19",
+      "featureId": "13215859312",
       "geometryType": "LineString",
       "properties": {
         "name": "宮島ロープウエー",
         "class": "aerialway",
-        "subclass": "cable_car",
+        "subclass": "gondola",
         "name_en": "Miyajima Ropeway",
         "name:latin": "Miyajima Ropeway",
         "name:nonlatin": "宮島ロープウエー"
@@ -55,7 +55,7 @@
         "z": 14,
         "x": 14213,
         "y": 6528,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/14213/6528.pbf"
       },
       "sourceLayer": "transportation",
       "featureIndex": "6",
@@ -72,7 +72,7 @@
         "z": 14,
         "x": 14213,
         "y": 6528,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/14213/6528.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/14213/6528.pbf"
       },
       "sourceLayer": "transportation_name",
       "featureIndex": "0",
@@ -93,7 +93,7 @@
         "z": 14,
         "x": 4957,
         "y": 6059,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/4957/6059.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/4957/6059.pbf"
       },
       "sourceLayer": "transportation_name",
       "featureIndex": "10",
@@ -119,7 +119,7 @@
         "z": 14,
         "x": 8585,
         "y": 5231,
-        "url": "https://tiles.openfreemap.org/planet/20260621_080001_pt/14/8585/5231.pbf"
+        "url": "https://tiles.openfreemap.org/planet/20261115_080022_pt/14/8585/5231.pbf"
       },
       "sourceLayer": "poi",
       "featureIndex": "0",
@@ -131,7 +131,7 @@
         "name": "Leuchtturm Westerheversand",
         "name_en": "Leuchtturm Westerheversand",
         "name:latin": "Leuchtturm Westerheversand",
-        "name:en": "Westerheversand Lighthouse",
+        "name:en": "Lighthouse Westerheversand",
         "rank": 1
       }
     }
