@@ -172,6 +172,35 @@
   color: var(--color-danger);
 }
 
+.export-progress {
+  inline-size: min(360px, calc(100vw - 48px));
+  border: 0;
+  border-radius: var(--radius-panel);
+  box-shadow: 0 24px 64px rgb(15 23 42 / 28%);
+  color: var(--color-ink);
+  padding: 24px;
+  text-align: center;
+}
+
+.export-progress:modal {
+  overscroll-behavior: contain;
+}
+
+.export-progress::backdrop {
+  overflow: hidden;
+  background: rgb(15 23 42 / 52%);
+  overscroll-behavior: contain;
+}
+
+.export-progress h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.export-progress progress {
+  inline-size: 100%;
+}
+
 .language-menu,
 .metric-source-menu,
 .map-style-menu,

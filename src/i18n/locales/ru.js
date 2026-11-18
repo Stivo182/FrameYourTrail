@@ -6,6 +6,7 @@ const ru = {
     uploadFile: "Выбрать файл",
     exportAria: "Экспорт постера",
     exportLabel: "Экспорт:",
+    exportingPoster: "Экспортируем постер…",
     clipboard: "В буфер",
     printPoster: "Печать",
     emptyTitle: "Загрузите файл маршрута, чтобы собрать инфографику",

@@ -6,6 +6,7 @@ const de = {
     uploadFile: "Datei wählen",
     exportAria: "Poster exportieren",
     exportLabel: "Export:",
+    exportingPoster: "Poster wird exportiert…",
     clipboard: "Zwischenablage",
     printPoster: "Drucken",
     emptyTitle: "Routendatei hochladen, um eine Routeninfografik zu erstellen",

@@ -201,13 +201,14 @@ large-track performance budget guard, which uses deterministic synthetic point
 counts and timing budgets in `npm run test:perf`.
 
 Large-track runtime behavior is best effort. The current UI has no upload,
-parse, terrain, render, or export progress indicator beyond normal busy/error
-states, and the product does not guarantee an upper bound for supported point
-counts. Browser memory limits, worker failures, map/rendering failures, terrain
-provider failures, or export canvas limits should surface as recoverable
-user-facing failures where possible. Export is attempted only after parsing,
-validation, analysis, poster rendering, current chart rendering, and current map
-rendering have successfully reached the export-ready path.
+parse, terrain, or render progress indicator beyond normal busy/error states;
+export feedback is specified in `Export`. The product does not guarantee an
+upper bound for supported point counts. Browser memory limits, worker failures,
+map/rendering failures, terrain provider failures, or export canvas limits
+should surface as recoverable user-facing failures where possible. Export is
+attempted only after parsing, validation, analysis, poster rendering, current
+chart rendering, and current map rendering have successfully reached the
+export-ready path.
 
 ## Track Location Lookup
 
@@ -674,6 +675,8 @@ Export behavior:
   available.
 - Wait for fonts, lazy poster rendering, current elevation chart rendering, and
   current route map rendering before export.
+- Show a blocking, localized wait dialog from export dispatch until the export
+  settles.
 - If the export target is unavailable after pending render work settles, show
   the localized export error.
 - Use white export background and pixel ratio `2`.

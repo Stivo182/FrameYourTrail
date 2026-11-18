@@ -1565,6 +1565,62 @@ test("renders speed-colored route from the cleaned analysis points", async ({ pa
   await expect(page.locator("[data-static-route-segment]")).toHaveCount(4);
 });
 
+test("shows a blocking wait dialog until export finishes", async ({ page }) => {
+  await useSavedLanguage(page, "en");
+  await abortOpenFreeMapTiles(page);
+  let releaseRuLocale = () => {};
+  const ruLocaleRelease = new Promise((resolve) => {
+    releaseRuLocale = () => resolve(undefined);
+  });
+  await page.route("**/src/i18n/locales/ru.js**", async (route) => {
+    await ruLocaleRelease;
+    await route.continue();
+  });
+  await page.route("**/src/services/image-export-service.js**", async (route) => {
+    await route.fulfill({
+      contentType: "application/javascript",
+      body: `
+        export async function exportPng() {
+          await new Promise((resolve) => {
+            window.__releaseExport = resolve;
+          });
+        }
+
+        export async function exportJpeg() {}
+
+        export async function copyPngToClipboard() {}
+      `
+    });
+  });
+
+  await page.goto("/");
+  await uploadFixture(page);
+  await expect(page.locator(".infographic")).toBeVisible();
+  await selectToolbarLanguage(page, "ru", /Русский/);
+
+  await clickExport(page, "png");
+  const waitDialog = page.locator("[data-export-progress]");
+  await expect(waitDialog).toBeVisible();
+  await expect(waitDialog).toContainText("Exporting poster");
+  await page.waitForFunction(() => {
+    const probeWindow = /** @type {Window & { __releaseExport?: () => void }} */ (window);
+    return typeof probeWindow.__releaseExport === "function";
+  });
+
+  releaseRuLocale();
+  await expect(waitDialog).toContainText("Экспортируем постер");
+  await expect(waitDialog).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(waitDialog).toBeVisible();
+
+  await page.evaluate(() => {
+    const probeWindow = /** @type {Window & { __releaseExport?: () => void }} */ (window);
+    probeWindow.__releaseExport?.();
+  });
+  await expect(waitDialog).toBeHidden();
+});
+
 test("exports infographic downloads and clipboard image", async ({ baseURL, context, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await useSavedLanguage(page, "ru");

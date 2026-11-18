@@ -46,6 +46,7 @@ import { reverseGeocodeTrackLocation } from "./services/track-location-service.j
 import { createState } from "./state/app-state.js";
 
 const appRoot = document.querySelector("#app");
+const exportProgressDialogRoot = document.querySelector("[data-export-progress]");
 const SELECTOR_MENU_SELECTOR =
   "[data-language-menu], [data-analysis-mode-menu], [data-map-style-menu], [data-export-menu]";
 
@@ -53,7 +54,12 @@ if (!(appRoot instanceof HTMLElement)) {
   throw new Error("App root was not found");
 }
 
+if (!(exportProgressDialogRoot instanceof HTMLDialogElement)) {
+  throw new Error("Export progress dialog was not found");
+}
+
 const app = appRoot;
+const exportProgressDialog = exportProgressDialogRoot;
 
 const ANALYSIS_MODE_LABELS = Object.freeze({
   [ANALYSIS_MODES.filtered]: "Recommended",
@@ -125,6 +131,9 @@ const trackLocationController = createTrackLocationController({
 document.addEventListener("mousedown", (event) => {
   closeOpenMenusFromOutsidePointer(app, event, { menuSelector: SELECTOR_MENU_SELECTOR });
 });
+exportProgressDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+});
 
 renderApp();
 
@@ -152,6 +161,11 @@ function renderApp() {
  */
 function renderAppWithI18n(i18n) {
   document.documentElement.lang = i18n.language;
+  const exportingLabel = escapeHtml(i18n.t("site.exportingPoster"));
+  exportProgressDialog.innerHTML = `
+    <h2 id="export-progress-title">${exportingLabel}</h2>
+    <progress aria-label="${exportingLabel}"></progress>
+  `;
   const shouldRestoreLanguageMenuFocus = languageMenuFocus.shouldRestoreAfterRender();
   const shouldRestoreAnalysisModeMenuFocus = analysisModeMenuFocus.shouldRestoreAfterRender();
   const shouldRestoreMapStyleMenuFocus = mapStyleMenuFocus.shouldRestoreAfterRender();
@@ -710,6 +724,8 @@ async function handleExport(kind) {
     renderApp();
   }
 
+  exportProgressDialog.showModal();
+
   try {
     const exported = await exportPoster({
       kind,
@@ -729,6 +745,9 @@ async function handleExport(kind) {
     });
     renderApp();
   } finally {
+    if (exportProgressDialog.open) {
+      exportProgressDialog.close();
+    }
     activePosterOutputCount = Math.max(0, activePosterOutputCount - 1);
     trackLocationController.renderPendingAfterPosterOutput();
   }

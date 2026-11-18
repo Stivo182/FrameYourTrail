@@ -6,6 +6,7 @@ const fr = {
     uploadFile: "Choisir fichier",
     exportAria: "Export du poster",
     exportLabel: "Exporter :",
+    exportingPoster: "Export du poster…",
     clipboard: "Presse-papiers",
     printPoster: "Imprimer",
     emptyTitle: "Importez un fichier d'itinéraire pour créer une infographie",

@@ -6,6 +6,7 @@ const en = {
     uploadFile: "Choose file",
     exportAria: "Poster export",
     exportLabel: "Export:",
+    exportingPoster: "Exporting poster…",
     clipboard: "Clipboard",
     printPoster: "Print",
     emptyTitle: "Upload a route file to build a route infographic",

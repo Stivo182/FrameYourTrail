@@ -6,6 +6,7 @@ const es = {
     uploadFile: "Elegir archivo",
     exportAria: "Exportar póster",
     exportLabel: "Exportar:",
+    exportingPoster: "Exportando póster…",
     clipboard: "Portapapeles",
     printPoster: "Imprimir",
     emptyTitle: "Carga un archivo de ruta para crear una infografía",
