@@ -2,6 +2,8 @@
   --app-content-width: 1240px;
 
   min-height: 100vh;
+  background: var(--color-paper);
+  color: var(--color-forest);
   padding: 24px;
 }
 
@@ -22,12 +24,9 @@
 }
 
 .toolbar h1 {
-  overflow: hidden;
   margin: 0;
   font-size: 20px;
   letter-spacing: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .toolbar__identity {
@@ -38,13 +37,10 @@
 }
 
 .toolbar__tagline {
-  overflow: hidden;
   margin: 0;
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .toolbar__actions {
@@ -53,11 +49,6 @@
   max-width: 100%;
   align-items: center;
   gap: 18px;
-}
-
-.app-shell:not(.app-shell--has-poster) {
-  background: var(--color-paper);
-  color: var(--color-forest);
 }
 
 .app-shell:not(.app-shell--has-poster) .toolbar__tagline {
@@ -371,9 +362,8 @@
 .map-style-menu__prefix,
 .map-style-menu__value,
 .export-menu__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-inline-size: 0;
+  overflow-wrap: break-word;
 }
 
 .language-menu__prefix,
@@ -566,15 +556,6 @@
   box-shadow: 0 8px 24px rgb(23 53 46 / 8%);
 }
 
-.app-shell--has-poster {
-  background: var(--color-paper);
-  color: var(--color-forest);
-}
-
-.app-shell--has-poster .toolbar__identity {
-  color: var(--color-forest);
-}
-
 .upload-box--replace {
   border-color: var(--color-primary);
   background: #fff;
@@ -624,13 +605,6 @@
   min-inline-size: 0;
 }
 
-.app-shell:not(.app-shell--has-poster) .toolbar h1,
-.app-shell:not(.app-shell--has-poster) .toolbar__tagline {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-}
-
 @media (width <= 900px) {
   .app-shell--has-poster .toolbar {
     position: static;
@@ -648,6 +622,17 @@
 
   .app-shell--has-poster .toolbar__actions {
     gap: 10px;
+    min-inline-size: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .app-shell--has-poster .toolbar__actions > * {
+    flex: 0 0 auto;
+  }
+
+  .app-shell--has-poster .toolbar__actions:has(> details[open]) {
+    overflow: clip visible;
   }
 }
 
@@ -667,13 +652,6 @@
 
   .app-shell--has-poster .toolbar__identity {
     min-inline-size: 0;
-  }
-
-  .app-shell--has-poster .toolbar h1,
-  .app-shell--has-poster .toolbar__tagline {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
   }
 
   .app-shell--has-poster .workspace {

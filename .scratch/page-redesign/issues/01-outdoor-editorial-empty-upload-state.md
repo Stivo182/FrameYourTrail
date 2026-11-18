@@ -10,29 +10,34 @@ seams while leaving the loaded poster workflow operational.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The empty identity bar retains the product name, tagline, and language
+- [x] The empty identity bar retains the product name, tagline, and language
       selector without duplicating the file-picker action.
-- [ ] The empty hero reuses the existing watercolor landscape and makes route
+- [x] The empty hero reuses the existing watercolor landscape and makes route
       upload the clear primary action.
-- [ ] The hero visibly communicates support for GPX, GPX-like XML, TCX, and FIT.
-- [ ] Privacy copy says that the route file stays in the browser without
+- [x] The hero visibly communicates support for GPX, GPX-like XML, TCX, and FIT.
+- [x] Privacy copy says that the route file stays in the browser without
       claiming that optional map, location, or terrain requests are offline.
-- [ ] Clicking the visible upload action opens the existing file input and keeps
+- [x] Clicking the visible upload action opens the existing file input and keeps
       its accepted file contract unchanged.
-- [ ] Drag-and-drop remains available only in the empty state and preserves
+- [x] Drag-and-drop remains available only in the empty state and preserves
       existing validation and error behavior.
-- [ ] New and changed copy is available in Russian, English, Spanish, French,
+- [x] New and changed copy is available in Russian, English, Spanish, French,
       and German with aligned locale dictionary shapes.
-- [ ] The warm shell palette and system typography establish the shared visual
+- [x] The warm shell palette and system typography establish the shared visual
       foundation without changing poster-specific styles.
-- [ ] The empty state fits at 320 CSS pixels, wraps under enlarged text, exposes
+- [x] The empty state fits at 320 CSS pixels, wraps under enlarged text, exposes
       visible focus, and provides at least 44 by 44 CSS pixel targets for coarse
       pointers.
-- [ ] Empty, language-menu, invalid-upload, mobile, and accessibility browser
+- [x] Empty, language-menu, invalid-upload, mobile, and accessibility browser
       coverage reflects the new user-visible behavior.
-- [ ] Shell-renderer and localization tests verify one file input, escaped copy,
+- [x] Shell-renderer and localization tests verify one file input, escaped copy,
       the empty-only drop zone, and locale completeness.
-- [ ] Product documentation describes the resulting empty upload workflow and
+- [x] Product documentation describes the resulting empty upload workflow and
       accurate privacy message without including implementation notes.
+
+## Answer
+
+Implemented and verified the localized editorial empty upload state, including
+the 320 CSS pixel, accessibility, privacy, input, and documentation contracts.

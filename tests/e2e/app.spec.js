@@ -146,9 +146,9 @@ test("keeps the empty upload experience reachable at 320 CSS pixels", async ({ p
 
   expect(uploadBox).not.toBeNull();
   expect(uploadBox?.height).toBeGreaterThanOrEqual(44);
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
-    .toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true
+  );
 
   await page.locator("[data-file-input]").focus();
   await expect
@@ -189,22 +189,36 @@ test("keeps the empty toolbar on one row while controls fit", async ({ page }) =
   await expectLocatorsToShareRow(page, ".toolbar__identity", ".toolbar__actions");
 });
 
-test("keeps loaded toolbar text on single lines when the mode selector is visible", async ({
-  page
-}) => {
+test("keeps loaded toolbar labels available under enlarged text", async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 844 });
   await useSavedLanguage(page, "ru");
   await abortOpenFreeMapTiles(page);
   await page.goto("/");
   await uploadFixture(page);
   await expect(page.locator(".infographic")).toBeVisible();
+  await page.addStyleTag({
+    content: `
+      .toolbar__actions {
+        font-size: 2rem;
+      }
+
+      .metric-source-menu,
+      .map-style-menu,
+      .export-menu {
+        inline-size: 12rem;
+      }
+    `
+  });
 
   await expectTextToUseOneLine(page, ".toolbar h1");
   await expectTextToUseOneLine(page, ".toolbar__tagline");
   await expectTextNotToBeClipped(page, ".toolbar h1");
   await expectTextNotToBeClipped(page, ".toolbar__tagline");
-  await expectTextToUseOneLine(page, ".metric-source-menu__prefix");
-  await expectTextToUseOneLine(page, ".metric-source-menu__value");
+  await expectTextNotToBeClipped(page, ".metric-source-menu__prefix");
+  await expectTextNotToBeClipped(page, ".metric-source-menu__value");
+  await expectTextNotToBeClipped(page, ".map-style-menu__prefix");
+  await expectTextNotToBeClipped(page, ".map-style-menu__value");
+  await expectTextNotToBeClipped(page, ".export-menu__label");
 });
 
 test("closes the language menu when activating the active language option", async ({ page }) => {
@@ -907,33 +921,73 @@ test("keeps loaded toolbar out of sticky mode on mobile", async ({ page }) => {
   expect(Math.round(scrolledToolbarBox.y)).toBe(Math.round(toolbarBox.y - scrollY));
 });
 
-test("keeps wrapped toolbar language menu panel inside the viewport", async ({ page }) => {
+test("keeps the loaded toolbar to two reachable rows at 320 CSS pixels", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await useSavedLanguage(page, "ru");
+  await abortOpenFreeMapTiles(page);
+  await page.goto("/");
+  await uploadFixture(page);
+  await expect(page.locator(".app-shell")).toHaveClass(/app-shell--has-poster/);
+
+  const toolbar = page.locator(".toolbar");
+  const identityBox = await toolbar.locator(".toolbar__identity").boundingBox();
+  const actions = toolbar.locator(".toolbar__actions");
+  const actionsBox = await actions.boundingBox();
+  const actionBoxes = await actions.locator(":scope > *").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom };
+    })
+  );
+
+  if (!identityBox || !actionsBox) {
+    throw new Error("Loaded toolbar rows are not measurable");
+  }
+
+  expect(identityBox.y + identityBox.height).toBeLessThanOrEqual(actionsBox.y);
+  expect(Math.max(...actionBoxes.map(({ top }) => top))).toBeLessThan(
+    Math.min(...actionBoxes.map(({ bottom }) => bottom))
+  );
+  expect(await actions.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true
+  );
+
+  const languageSummary = page.locator("[data-language-menu] summary");
+  await languageSummary.scrollIntoViewIfNeeded();
+  await expect(languageSummary).toBeInViewport();
+});
+
+test("keeps the scrollable toolbar language menu panel inside the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 844 });
   await useSavedLanguage(page, "ru");
   await abortOpenFreeMapTiles(page);
   await page.goto("/");
   await uploadFixture(page);
   await expect(page.locator(".infographic")).toBeVisible();
-  await page.addStyleTag({
-    content: ".export-menu { flex-basis: 100%; }"
-  });
 
-  const exportBox = await page.locator("[data-export-menu]").boundingBox();
   const summary = page.locator("[data-language-menu] summary");
 
+  await summary.scrollIntoViewIfNeeded();
   await summary.click();
   await expect(page.locator("[data-language-menu]")).toHaveAttribute("open", "");
+  await expect(page.locator(".language-menu__panel")).toBeVisible();
 
-  const summaryBox = await summary.boundingBox();
   const panelBox = await page.locator(".language-menu__panel").boundingBox();
 
-  if (!exportBox || !summaryBox || !panelBox) {
+  if (!panelBox) {
     throw new Error("Language menu layout is not measurable");
   }
 
-  expect(summaryBox.y).toBeGreaterThan(exportBox.y + exportBox.height);
   expect(panelBox.x).toBeGreaterThanOrEqual(0);
   expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(620);
+  expect(
+    await page.locator(".language-menu__panel").evaluate((panel) => {
+      const box = panel.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return hit ? panel.contains(hit) : false;
+    })
+  ).toBe(true);
 });
 
 test("fits the poster preview to a narrow viewport while keeping export dimensions", async ({
@@ -2464,10 +2518,13 @@ async function expectTextToUseOneLine(page, selector) {
  */
 async function expectTextNotToBeClipped(page, selector) {
   const textBox = await page.locator(selector).evaluate((node) => ({
+    clientHeight: node.clientHeight,
     clientWidth: node.clientWidth,
+    scrollHeight: node.scrollHeight,
     scrollWidth: node.scrollWidth
   }));
 
+  expect(textBox.scrollHeight).toBeLessThanOrEqual(textBox.clientHeight + 1);
   expect(textBox.scrollWidth).toBeLessThanOrEqual(textBox.clientWidth + 1);
 }
 

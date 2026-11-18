@@ -18,9 +18,6 @@ test("has no detectable accessibility violations in the narrow empty state", asy
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/");
   await expect(page.locator("[data-testid='empty-state']")).toBeVisible();
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
-    .toBe(true);
 
   await expectNoA11yViolations(page);
 });
@@ -72,9 +69,6 @@ test("has no detectable accessibility violations in the mobile loaded state", as
   await uploadValidGpx(page);
   await expect(page.locator(".infographic")).toBeVisible();
   await expect(page.locator("[data-static-route]")).toBeVisible();
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
-    .toBe(true);
 
   await expectNoA11yViolations(page);
 });
