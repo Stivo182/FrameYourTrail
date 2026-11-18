@@ -4,6 +4,7 @@ const en = {
     toolbarLabel: "Control panel",
     tagline: "Turn any route into a poster",
     uploadFile: "Choose file",
+    replaceRoute: "Replace route",
     exportAria: "Poster export",
     exportLabel: "Export:",
     exportingPoster: "Exporting poster…",

@@ -41,7 +41,7 @@ export function renderAppShell({
           <p class="toolbar__tagline">${escapeHtml(i18n.t("site.tagline"))}</p>
         </div>
         <div class="toolbar__actions">
-          ${hasPoster ? renderUploadControl(i18n) : ""}
+          ${hasPoster ? renderUploadControl(i18n, { className: "upload-box upload-box--replace", labelKey: "site.replaceRoute" }) : ""}
           ${analysisModeSelectHtml}
           ${mapStyleSelectHtml}
           ${exportControlsHtml}
@@ -170,7 +170,7 @@ export function renderEmptyState(i18n) {
 
 /**
  * @param {I18nLike} i18n
- * @param {{ className?: string, describedBy?: string }} [options]
+ * @param {{ className?: string, describedBy?: string, labelKey?: string }} [options]
  */
 function renderUploadControl(i18n, options = {}) {
   const className = options.className ?? "upload-box";
@@ -181,7 +181,7 @@ function renderUploadControl(i18n, options = {}) {
   return `
     <label class="${escapeHtml(className)}" for="route-file-input">
       <input id="route-file-input" data-file-input type="file" accept=".gpx,.tcx,.fit,application/gpx+xml,application/vnd.garmin.tcx+xml,application/xml,text/xml,application/octet-stream"${describedBy} />
-      <span>${escapeHtml(i18n.t("site.uploadFile"))}</span>
+      <span>${escapeHtml(i18n.t(options.labelKey ?? "site.uploadFile"))}</span>
     </label>
   `;
 }

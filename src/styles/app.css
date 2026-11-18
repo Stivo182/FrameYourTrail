@@ -155,8 +155,8 @@
 }
 
 .upload-box--hero:hover {
-  border-color: #0f6258;
-  background: #0f6258;
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
 }
 
 .empty-state__formats {
@@ -552,12 +552,50 @@
 
 .app-shell--has-poster .workspace {
   margin-block-end: 0;
+  border-radius: 18px;
+  background: #e8e2d5;
+  padding-block: clamp(16px, 3vw, 36px);
 }
 
 .app-shell--has-poster .toolbar {
   position: sticky;
   top: 12px;
   z-index: 20;
+  border-color: #d4ccbd;
+  background: #fbfaf6;
+  box-shadow: 0 8px 24px rgb(23 53 46 / 8%);
+}
+
+.app-shell--has-poster {
+  background: var(--color-paper);
+  color: var(--color-forest);
+}
+
+.app-shell--has-poster .toolbar__identity {
+  color: var(--color-forest);
+}
+
+.upload-box--replace {
+  border-color: var(--color-primary);
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.upload-box--replace:hover {
+  border-color: var(--color-forest);
+  background: #edf5f2;
+  color: var(--color-forest);
+}
+
+.app-shell--has-poster .export-menu summary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.app-shell--has-poster .export-menu summary:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
 }
 
 .app-shell--has-poster .poster-scroll {
@@ -566,6 +604,13 @@
   border-radius: 0;
   background: transparent;
   padding: 0;
+}
+
+.app-shell--has-poster .poster-preview-frame {
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(23 53 46 / 16%),
+    0 18px 44px rgb(23 53 46 / 16%);
 }
 
 .app-shell:not(.app-shell--has-poster) .toolbar {
@@ -595,6 +640,15 @@
     flex-wrap: wrap;
     justify-content: flex-start;
   }
+
+  .app-shell--has-poster .toolbar__identity,
+  .app-shell--has-poster .toolbar__actions {
+    flex-basis: 100%;
+  }
+
+  .app-shell--has-poster .toolbar__actions {
+    gap: 10px;
+  }
 }
 
 @media (width <= 480px) {
@@ -602,8 +656,29 @@
     padding: 16px;
   }
 
+  .app-shell--has-poster .toolbar {
+    gap: 12px;
+    padding: 12px;
+  }
+
   .app-shell:not(.app-shell--has-poster) .toolbar {
     gap: 12px;
+  }
+
+  .app-shell--has-poster .toolbar__identity {
+    min-inline-size: 0;
+  }
+
+  .app-shell--has-poster .toolbar h1,
+  .app-shell--has-poster .toolbar__tagline {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .app-shell--has-poster .workspace {
+    border-radius: 12px;
+    padding-block: 10px;
   }
 
   .empty-state {
@@ -641,7 +716,15 @@
 
 @media (pointer: coarse) {
   .upload-box,
-  .language-menu summary {
+  .language-menu summary,
+  .metric-source-menu summary,
+  .map-style-menu summary,
+  .export-menu summary,
+  .print-button,
+  .language-menu__option,
+  .metric-source-menu__option,
+  .map-style-menu__option,
+  .export-menu__option {
     min-block-size: 44px;
   }
 }

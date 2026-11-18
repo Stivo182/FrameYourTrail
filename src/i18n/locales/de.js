@@ -4,6 +4,7 @@ const de = {
     toolbarLabel: "Bedienfeld",
     tagline: "Verwandle jede Route in ein Poster",
     uploadFile: "Datei wählen",
+    replaceRoute: "Route ersetzen",
     exportAria: "Poster exportieren",
     exportLabel: "Export:",
     exportingPoster: "Poster wird exportiert…",

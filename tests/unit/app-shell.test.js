@@ -21,7 +21,7 @@ describe("app shell renderer", () => {
       i18n: i18n("en", {
         "site.toolbarLabel": "Toolbar <main>",
         "site.tagline": "Make <route> posters",
-        "site.uploadFile": "Upload & inspect"
+        "site.replaceRoute": "Replace & inspect"
       }),
       hasPoster: true,
       analysisModeSelectHtml: "<div data-analysis-mode-menu></div>",
@@ -36,13 +36,48 @@ describe("app shell renderer", () => {
     expect(html).toContain('aria-label="Toolbar &lt;main&gt;"');
     expect(html).toContain("<h1>Frame Your Trail</h1>");
     expect(html).toContain("Make &lt;route&gt; posters");
-    expect(html).toContain("Upload &amp; inspect");
+    expect(html).toContain("Replace &amp; inspect");
     expect(html).toContain("<div data-analysis-mode-menu></div>");
     expect(html).toContain("<details data-map-style-menu></details>");
     expect(html).toContain("<div data-export-controls></div>");
     expect(html).toContain("<details data-language-menu></details>");
     expect(html).toContain("<section data-messages></section>");
     expect(html).toContain("<section data-workspace></section>");
+  });
+
+  it("orders the loaded workflow controls around one localized replace action", () => {
+    const html = renderAppShell({
+      i18n: i18n("en", {
+        "site.toolbarLabel": "Toolbar",
+        "site.tagline": "Make route posters",
+        "site.replaceRoute": "Replace route"
+      }),
+      hasPoster: true,
+      analysisModeSelectHtml: "<details data-analysis-mode-menu></details>",
+      mapStyleSelectHtml: "<details data-map-style-menu></details>",
+      exportControlsHtml:
+        '<details data-export-menu></details><button data-print type="button"></button>',
+      languageSelectHtml: "<details data-language-menu></details>",
+      messagesHtml: "",
+      contentHtml: "<section data-workspace></section>"
+    });
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const actions = container.querySelector(".toolbar__actions");
+
+    expect(container.querySelectorAll("[data-file-input]")).toHaveLength(1);
+    expect(container.querySelector("[data-drop-zone]")).toBeNull();
+    expect(container.querySelector('label[for="route-file-input"]')?.textContent?.trim()).toBe(
+      "Replace route"
+    );
+    expect(Array.from(actions?.children ?? []).map((element) => element.outerHTML)).toEqual([
+      expect.stringContaining('for="route-file-input"'),
+      expect.stringContaining("data-analysis-mode-menu"),
+      expect.stringContaining("data-map-style-menu"),
+      expect.stringContaining("data-export-menu"),
+      expect.stringContaining("data-print"),
+      expect.stringContaining("data-language-menu")
+    ]);
   });
 
   it("renders the GitHub repository link and package version after the application content", () => {

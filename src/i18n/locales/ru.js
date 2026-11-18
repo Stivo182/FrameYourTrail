@@ -4,6 +4,7 @@ const ru = {
     toolbarLabel: "Панель управления",
     tagline: "Превратите любой маршрут в постер",
     uploadFile: "Выбрать файл",
+    replaceRoute: "Заменить маршрут",
     exportAria: "Экспорт постера",
     exportLabel: "Экспорт:",
     exportingPoster: "Экспортируем постер…",

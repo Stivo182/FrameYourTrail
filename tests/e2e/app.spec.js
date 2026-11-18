@@ -269,13 +269,21 @@ test("uploads GPX and shows infographic preview", async ({ page }) => {
   await expect(page.locator(".poster-scroll")).toHaveCSS("overflow-y", "auto");
   await expect(page.locator(".poster-scroll")).toHaveCSS("border-top-width", "0px");
   await expect(page.locator(".poster-scroll")).toHaveCSS("padding-top", "0px");
-  await expect(page.locator(".upload-box")).toContainText("Выбрать файл");
+  await expect(page.locator(".upload-box")).toContainText("Заменить маршрут");
   await expect(page.locator(".toolbar__tagline")).toHaveText("Превратите любой маршрут в постер");
   await expect(page.locator(".toolbar__tagline")).not.toContainText("постер готов");
   await expect(page.locator(".toolbar__tagline")).not.toContainText("valid-track.gpx");
-  await expect(page.locator(".toolbar")).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(page.locator(".upload-box")).toHaveCSS("background-color", "rgb(15, 118, 110)");
+  await expect(page.locator(".toolbar")).toHaveCSS("background-color", "rgb(251, 250, 246)");
+  await expect(page.locator(".upload-box")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator(".upload-box")).toHaveCSS("color", "rgb(20, 117, 104)");
   await expect(page.locator(".upload-box")).toHaveCSS("min-height", "38px");
+  await expect(page.locator("[data-export-menu] summary")).toHaveCSS(
+    "background-color",
+    "rgb(20, 117, 104)"
+  );
+  await expect(page.locator("[data-export-menu] summary")).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(page.locator(".workspace")).toHaveCSS("background-color", "rgb(232, 226, 213)");
+  await expect(page.locator("[data-poster-preview-frame]")).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator("[data-export-menu] summary")).toContainText("Экспорт");
   await page.locator("[data-export-menu] summary").click();
   await expect(page.locator("[data-export-menu] [data-export='png']")).toBeVisible();
@@ -1571,6 +1579,7 @@ test("keeps a pending source upload current when the old track analysis mode cha
   await uploadFixture(page);
   await expect(page.locator(".poster-header")).toContainText("Test Ridge Route");
   await expect(page.locator("[data-analysis-mode-menu]")).toContainText("Recommended");
+  await expect(page.locator('label[for="route-file-input"]')).toHaveText("Replace route");
 
   await uploadSecondRouteFixture(page);
   await page.waitForFunction(() => {

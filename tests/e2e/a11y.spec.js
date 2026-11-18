@@ -66,12 +66,15 @@ test("has no detectable accessibility violations with the language menu open", a
 });
 
 test("has no detectable accessibility violations in the mobile loaded state", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 720 });
   await abortOpenFreeMapTiles(page);
   await page.goto("/");
   await uploadValidGpx(page);
   await expect(page.locator(".infographic")).toBeVisible();
   await expect(page.locator("[data-static-route]")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
 
   await expectNoA11yViolations(page);
 });

@@ -28,6 +28,16 @@ test("matches screenshot for mobile route-report", async ({ page }) => {
   });
 });
 
+test("matches screenshot for the loaded poster workspace", async ({ page }) => {
+  await useSavedLanguage(page, "ru");
+  await page.goto("/");
+  await uploadValidGpx(page);
+  await expectRouteReportReady(page);
+  await expect(page).toHaveScreenshot("loaded-poster-workspace.png", {
+    animations: "disabled"
+  });
+});
+
 test("matches screenshot for the empty upload shell", async ({ page }) => {
   await useSavedLanguage(page, "ru");
   await page.goto("/");

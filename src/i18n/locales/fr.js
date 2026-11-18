@@ -4,6 +4,7 @@ const fr = {
     toolbarLabel: "Panneau de contrôle",
     tagline: "Transformez n'importe quel itinéraire en poster",
     uploadFile: "Choisir fichier",
+    replaceRoute: "Remplacer l’itinéraire",
     exportAria: "Export du poster",
     exportLabel: "Exporter :",
     exportingPoster: "Export du poster…",

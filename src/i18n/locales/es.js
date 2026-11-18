@@ -4,6 +4,7 @@ const es = {
     toolbarLabel: "Panel de control",
     tagline: "Convierte cualquier ruta en un póster",
     uploadFile: "Elegir archivo",
+    replaceRoute: "Reemplazar ruta",
     exportAria: "Exportar póster",
     exportLabel: "Exportar:",
     exportingPoster: "Exportando póster…",

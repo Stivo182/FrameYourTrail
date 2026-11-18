@@ -197,6 +197,14 @@ describe("i18n", () => {
     expect(LOCALES.de.site.printPoster).toBe("Drucken");
   });
 
+  it("localizes the loaded replace-route action", () => {
+    expect(LOCALES.ru.site.replaceRoute).toBe("Заменить маршрут");
+    expect(LOCALES.en.site.replaceRoute).toBe("Replace route");
+    expect(LOCALES.es.site.replaceRoute).toBe("Reemplazar ruta");
+    expect(LOCALES.fr.site.replaceRoute).toBe("Remplacer l’itinéraire");
+    expect(LOCALES.de.site.replaceRoute).toBe("Route ersetzen");
+  });
+
   it("uses format-neutral text for shared track diagnostics and analysis modes", () => {
     const sharedTrackKeys = [
       "messages.emptyTrack",
