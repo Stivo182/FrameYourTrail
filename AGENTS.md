@@ -39,6 +39,23 @@
   cross-cutting boundaries, run `npm run build` and `npm run test:build` or
   `npm run verify`.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked as local Markdown under `.scratch/`. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The tracker uses the five default canonical triage labels. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses a single-context layout. See
+`docs/agents/domain.md`.
+
 ## Build, Run, And Test
 
 - Install dependencies with `npm ci`.
