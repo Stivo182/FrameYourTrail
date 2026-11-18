@@ -123,10 +123,12 @@ visual snapshot baseline. The Pages `build` and `deploy` jobs remain on Ubuntu.
    renderer as needed, then shows the poster preview.
    If poster preview rendering fails, the preview area shows a localized
    recoverable error message instead of becoming empty.
-7. The loaded command bar presents product identity, a secondary localized
-   "Replace route" action, metric source, map style, primary export, separate
-   print, and language controls in workflow order. The scaled fixed poster sits
-   as a bordered, subtly shadowed sheet on a warm workspace; desktop keeps the
+7. The loaded command bar presents compact product identity without the empty-state
+   tagline, a quiet secondary localized "Replace route" action, borderless metric
+   source and map controls, primary export, separate print, and language controls
+   in workflow order. The scaled fixed poster sits
+   directly on the warm page background without an additional preview frame;
+   desktop keeps the
    command bar sticky, while narrow layouts use an identity row and a
    horizontally scrollable actions row without obscuring the poster or widening
    the page. Command-bar labels wrap or grow instead of being clipped.

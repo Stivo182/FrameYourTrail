@@ -38,7 +38,7 @@ export function renderAppShell({
       <section class="toolbar" aria-label="${escapeHtml(i18n.t("site.toolbarLabel"))}">
         <div class="toolbar__identity">
           <h1>Frame Your Trail</h1>
-          <p class="toolbar__tagline">${escapeHtml(i18n.t("site.tagline"))}</p>
+          ${hasPoster ? "" : `<p class="toolbar__tagline">${escapeHtml(i18n.t("site.tagline"))}</p>`}
         </div>
         <div class="toolbar__actions">
           ${hasPoster ? renderUploadControl(i18n, { className: "upload-box upload-box--replace", labelKey: "site.replaceRoute" }) : ""}

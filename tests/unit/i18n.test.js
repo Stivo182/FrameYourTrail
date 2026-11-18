@@ -156,6 +156,12 @@ describe("i18n", () => {
   });
 
   it("localizes the empty upload formats and browser-only file handling copy", () => {
+    expect(LOCALES.ru.site.emptyTitle).toBe("Превратите маршрут в постер");
+    expect(LOCALES.en.site.emptyTitle).toBe("Turn your route into a poster");
+    expect(LOCALES.es.site.emptyTitle).toBe("Convierte tu ruta en un póster");
+    expect(LOCALES.fr.site.emptyTitle).toBe("Transformez votre itinéraire en poster");
+    expect(LOCALES.de.site.emptyTitle).toBe("Verwandle deine Route in ein Poster");
+
     expect(LOCALES.ru.site.emptyFormats).toBe("Поддерживаются GPX, GPX-подобный XML, TCX и FIT.");
     expect(LOCALES.en.site.emptyFormats).toBe("Supports GPX, GPX-like XML, TCX, and FIT.");
     expect(LOCALES.es.site.emptyFormats).toBe("Admite GPX, XML similar a GPX, TCX y FIT.");
@@ -266,7 +272,11 @@ describe("i18n", () => {
     expect(LOCALES.ru.analysis.modeDescriptions.recomputed_raw).toContain("стандартной очистки");
   });
   it("uses user-facing map style copy", () => {
-    expect(LOCALES.en.mapStyle.selectLabel).toBe("Map style");
+    expect(LOCALES.ru.mapStyle.selectLabel).toBe("Карта");
+    expect(LOCALES.en.mapStyle.selectLabel).toBe("Map");
+    expect(LOCALES.es.mapStyle.selectLabel).toBe("Mapa");
+    expect(LOCALES.fr.mapStyle.selectLabel).toBe("Carte");
+    expect(LOCALES.de.mapStyle.selectLabel).toBe("Karte");
     expect(LOCALES.en.mapStyle.styles.openfreemap_poster.label).toBe("OpenFreeMap");
     expect(LOCALES.en.mapStyle.styles.osm_standard.label).toBe("OSM Standard");
     expect(LOCALES.en.mapStyle.styles.cyclosm.description).toMatch(/bike/i);

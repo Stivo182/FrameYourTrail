@@ -10,7 +10,7 @@ const en = {
     exportingPoster: "Exporting poster…",
     clipboard: "Clipboard",
     printPoster: "Print",
-    emptyTitle: "Turn your route into a trail poster",
+    emptyTitle: "Turn your route into a poster",
     emptyBody: "Drop a route file here or choose one to begin.",
     emptyFormats: "Supports GPX, GPX-like XML, TCX, and FIT.",
     emptyPrivacy: "Your route file stays in your browser.",
@@ -57,7 +57,7 @@ const en = {
     }
   },
   mapStyle: {
-    selectLabel: "Map style",
+    selectLabel: "Map",
     styles: {
       openfreemap_poster: {
         label: "OpenFreeMap",

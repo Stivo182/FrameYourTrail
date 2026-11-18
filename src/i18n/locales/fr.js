@@ -10,7 +10,7 @@ const fr = {
     exportingPoster: "Export du poster…",
     clipboard: "Presse-papiers",
     printPoster: "Imprimer",
-    emptyTitle: "Transformez votre parcours en affiche d’aventure",
+    emptyTitle: "Transformez votre itinéraire en poster",
     emptyBody: "Déposez un fichier d’itinéraire ici ou choisissez-en un pour commencer.",
     emptyFormats: "Formats pris en charge : GPX, XML similaire à GPX, TCX et FIT.",
     emptyPrivacy: "Votre fichier d’itinéraire reste dans votre navigateur.",
@@ -61,7 +61,7 @@ const fr = {
     }
   },
   mapStyle: {
-    selectLabel: "Style de carte",
+    selectLabel: "Carte",
     styles: {
       openfreemap_poster: {
         label: "OpenFreeMap",

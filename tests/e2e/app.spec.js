@@ -119,7 +119,7 @@ test("presents one accessible route upload action in the empty editorial hero", 
   const uploadAction = page.locator('label[for="route-file-input"]');
 
   await expect(emptyState.getByRole("heading", { level: 2 })).toHaveText(
-    "Turn your route into a trail poster"
+    "Turn your route into a poster"
   );
   await expect(emptyState).toContainText("Drop a route file here or choose one to begin.");
   await expect(emptyState).toContainText("Supports GPX, GPX-like XML, TCX, and FIT.");
@@ -211,9 +211,8 @@ test("keeps loaded toolbar labels available under enlarged text", async ({ page 
   });
 
   await expectTextToUseOneLine(page, ".toolbar h1");
-  await expectTextToUseOneLine(page, ".toolbar__tagline");
   await expectTextNotToBeClipped(page, ".toolbar h1");
-  await expectTextNotToBeClipped(page, ".toolbar__tagline");
+  await expect(page.locator(".toolbar__tagline")).toHaveCount(0);
   await expectTextNotToBeClipped(page, ".metric-source-menu__prefix");
   await expectTextNotToBeClipped(page, ".metric-source-menu__value");
   await expectTextNotToBeClipped(page, ".map-style-menu__prefix");
@@ -284,20 +283,28 @@ test("uploads GPX and shows infographic preview", async ({ page }) => {
   await expect(page.locator(".poster-scroll")).toHaveCSS("border-top-width", "0px");
   await expect(page.locator(".poster-scroll")).toHaveCSS("padding-top", "0px");
   await expect(page.locator(".upload-box")).toContainText("Заменить маршрут");
-  await expect(page.locator(".toolbar__tagline")).toHaveText("Превратите любой маршрут в постер");
-  await expect(page.locator(".toolbar__tagline")).not.toContainText("постер готов");
-  await expect(page.locator(".toolbar__tagline")).not.toContainText("valid-track.gpx");
+  await expect(page.locator(".toolbar__tagline")).toHaveCount(0);
   await expect(page.locator(".toolbar")).toHaveCSS("background-color", "rgb(251, 250, 246)");
-  await expect(page.locator(".upload-box")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator(".upload-box")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator(".upload-box")).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
   await expect(page.locator(".upload-box")).toHaveCSS("color", "rgb(20, 117, 104)");
   await expect(page.locator(".upload-box")).toHaveCSS("min-height", "38px");
+  await expect(page.locator("[data-analysis-mode-menu] summary")).toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)"
+  );
+  await expect(page.locator("[data-map-style-menu] summary")).toContainText("Карта: OpenFreeMap");
+  await expect(page.locator("[data-map-style-menu] summary")).toHaveCSS(
+    "border-top-color",
+    "rgba(0, 0, 0, 0)"
+  );
   await expect(page.locator("[data-export-menu] summary")).toHaveCSS(
     "background-color",
     "rgb(20, 117, 104)"
   );
   await expect(page.locator("[data-export-menu] summary")).toHaveCSS("color", "rgb(255, 255, 255)");
-  await expect(page.locator(".workspace")).toHaveCSS("background-color", "rgb(232, 226, 213)");
-  await expect(page.locator("[data-poster-preview-frame]")).not.toHaveCSS("box-shadow", "none");
+  await expect(page.locator(".workspace")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(page.locator("[data-poster-preview-frame]")).toHaveCSS("box-shadow", "none");
   await expect(page.locator("[data-export-menu] summary")).toContainText("Экспорт");
   await page.locator("[data-export-menu] summary").click();
   await expect(page.locator("[data-export-menu] [data-export='png']")).toBeVisible();
@@ -1150,9 +1157,8 @@ test("switches site and poster language after GPX upload", async ({ page }) => {
   await expect(page.locator(".metric-table")).toBeVisible();
   await selectToolbarLanguage(page, "fr", /Français/);
 
-  await expect(page.locator(".toolbar__tagline")).toHaveText(
-    "Transformez n'importe quel itinéraire en poster"
-  );
+  await expect(page.locator(".toolbar__tagline")).toHaveCount(0);
+  await expect(page.locator("[data-map-style-menu] summary")).toContainText("Carte");
   await expect(page.locator(".poster-stats")).not.toContainText("Indicateurs clés");
   await expect(page.getByText("Profil d'altitude")).toBeVisible();
   await expect(page.locator(".poster-stats").getByText("Distance", { exact: true })).toBeVisible();
@@ -1314,21 +1320,21 @@ test("keeps fallback shell usable while the selected language dictionary loads",
 
   await page.goto("/");
   await expect(page.locator("[data-testid='empty-state']")).toContainText(
-    "Turn your route into a trail poster"
+    "Turn your route into a poster"
   );
 
   await selectToolbarLanguage(page, "ru", /Русский/);
   await expect.poll(() => ruLocaleRequests).toBe(1);
   await page.waitForTimeout(250);
   await expect(page.locator("[data-testid='empty-state']")).toContainText(
-    "Turn your route into a trail poster"
+    "Turn your route into a poster"
   );
   await expect(page.locator("[data-file-input]")).toBeEnabled();
   await expectToolbarLanguage(page, "ru");
 
   releaseRuLocale();
   await expect(page.locator("[data-testid='empty-state']")).toContainText(
-    "Превратите маршрут в постер для приключений"
+    "Превратите маршрут в постер"
   );
 });
 

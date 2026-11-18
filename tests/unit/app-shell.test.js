@@ -35,7 +35,7 @@ describe("app shell renderer", () => {
     expect(html).toContain('class="app-shell app-shell--has-poster"');
     expect(html).toContain('aria-label="Toolbar &lt;main&gt;"');
     expect(html).toContain("<h1>Frame Your Trail</h1>");
-    expect(html).toContain("Make &lt;route&gt; posters");
+    expect(html).not.toContain("Make &lt;route&gt; posters");
     expect(html).toContain("Replace &amp; inspect");
     expect(html).toContain("<div data-analysis-mode-menu></div>");
     expect(html).toContain("<details data-map-style-menu></details>");

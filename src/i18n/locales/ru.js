@@ -10,7 +10,7 @@ const ru = {
     exportingPoster: "Экспортируем постер…",
     clipboard: "В буфер",
     printPoster: "Печать",
-    emptyTitle: "Превратите маршрут в постер для приключений",
+    emptyTitle: "Превратите маршрут в постер",
     emptyBody: "Перетащите сюда файл маршрута или выберите его, чтобы начать.",
     emptyFormats: "Поддерживаются GPX, GPX-подобный XML, TCX и FIT.",
     emptyPrivacy: "Файл маршрута остаётся в вашем браузере.",
@@ -56,7 +56,7 @@ const ru = {
     }
   },
   mapStyle: {
-    selectLabel: "Стиль карты",
+    selectLabel: "Карта",
     styles: {
       openfreemap_poster: {
         label: "OpenFreeMap",

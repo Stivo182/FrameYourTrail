@@ -542,36 +542,54 @@
 
 .app-shell--has-poster .workspace {
   margin-block-end: 0;
-  border-radius: 18px;
-  background: #e8e2d5;
-  padding-block: clamp(16px, 3vw, 36px);
 }
 
 .app-shell--has-poster .toolbar {
   position: sticky;
   top: 12px;
   z-index: 20;
+  min-height: 56px;
   border-color: #d4ccbd;
   background: #fbfaf6;
   box-shadow: 0 8px 24px rgb(23 53 46 / 8%);
 }
 
+.app-shell--has-poster .toolbar__actions {
+  gap: 6px;
+}
+
 .upload-box--replace {
-  border-color: var(--color-primary);
-  background: #fff;
+  border-color: transparent;
+  background: transparent;
   color: var(--color-primary);
 }
 
 .upload-box--replace:hover {
-  border-color: var(--color-forest);
+  border-color: transparent;
   background: #edf5f2;
   color: var(--color-forest);
+}
+
+.app-shell--has-poster .language-menu summary,
+.app-shell--has-poster .metric-source-menu summary,
+.app-shell--has-poster .map-style-menu summary,
+.app-shell--has-poster .print-button {
+  border-color: transparent;
+  background: transparent;
 }
 
 .app-shell--has-poster .export-menu summary {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: #fff;
+}
+
+.app-shell--has-poster .language-menu summary:hover,
+.app-shell--has-poster .metric-source-menu summary:hover,
+.app-shell--has-poster .map-style-menu summary:hover,
+.app-shell--has-poster .print-button:hover {
+  border-color: transparent;
+  background: #edf5f2;
 }
 
 .app-shell--has-poster .export-menu summary:hover {
@@ -585,13 +603,6 @@
   border-radius: 0;
   background: transparent;
   padding: 0;
-}
-
-.app-shell--has-poster .poster-preview-frame {
-  background: #fff;
-  box-shadow:
-    0 0 0 1px rgb(23 53 46 / 16%),
-    0 18px 44px rgb(23 53 46 / 16%);
 }
 
 .app-shell:not(.app-shell--has-poster) .toolbar {
@@ -652,11 +663,6 @@
 
   .app-shell--has-poster .toolbar__identity {
     min-inline-size: 0;
-  }
-
-  .app-shell--has-poster .workspace {
-    border-radius: 12px;
-    padding-block: 10px;
   }
 
   .empty-state {

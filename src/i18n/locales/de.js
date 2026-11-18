@@ -10,7 +10,7 @@ const de = {
     exportingPoster: "Poster wird exportiert…",
     clipboard: "Zwischenablage",
     printPoster: "Drucken",
-    emptyTitle: "Verwandle deine Route in ein Abenteuerposter",
+    emptyTitle: "Verwandle deine Route in ein Poster",
     emptyBody: "Ziehe eine Routendatei hierher oder wähle eine aus.",
     emptyFormats: "Unterstützt werden GPX, GPX-ähnliches XML, TCX und FIT.",
     emptyPrivacy: "Deine Routendatei bleibt in deinem Browser.",
@@ -59,7 +59,7 @@ const de = {
     }
   },
   mapStyle: {
-    selectLabel: "Kartenstil",
+    selectLabel: "Karte",
     styles: {
       openfreemap_poster: {
         label: "OpenFreeMap",
