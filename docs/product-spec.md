@@ -128,10 +128,9 @@ visual snapshot baseline. The Pages `build` and `deploy` jobs remain on Ubuntu.
    source and map controls, primary export, separate print, and language controls
    in workflow order. The scaled fixed poster sits
    directly on the warm page background without an additional preview frame;
-   desktop keeps the
-   command bar sticky, while narrow layouts use an identity row and a
-   horizontally scrollable actions row without obscuring the poster or widening
-   the page. Command-bar labels wrap or grow instead of being clipped.
+   desktop keeps the command bar sticky, while narrow layouts wrap the actions
+   onto visible rows without obscuring the poster or widening the page.
+   Command-bar labels wrap or grow instead of being clipped.
 8. Replacing a route uses the same accepted formats and file-processing path as
    the initial upload.
 9. The user can switch metric source when more than one source is selectable.

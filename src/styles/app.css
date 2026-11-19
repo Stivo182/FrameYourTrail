@@ -634,16 +634,11 @@
   .app-shell--has-poster .toolbar__actions {
     gap: 10px;
     min-inline-size: 0;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .app-shell--has-poster .toolbar__actions > * {
     flex: 0 0 auto;
-  }
-
-  .app-shell--has-poster .toolbar__actions:has(> details[open]) {
-    overflow: clip visible;
   }
 }
 
@@ -663,6 +658,12 @@
 
   .app-shell--has-poster .toolbar__identity {
     min-inline-size: 0;
+  }
+
+  .app-shell--has-poster .upload-box--replace {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-inline: 10px;
   }
 
   .empty-state {
@@ -685,9 +686,10 @@
     width: 100%;
   }
 
-  .metric-source-menu,
-  .map-style-menu {
-    inline-size: min(100%, calc(100vw - 48px));
+  .app-shell--has-poster .metric-source-menu,
+  .app-shell--has-poster .map-style-menu {
+    min-inline-size: 0;
+    inline-size: 100%;
   }
 
   .metric-source-menu__panel,

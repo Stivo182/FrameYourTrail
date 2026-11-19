@@ -928,7 +928,7 @@ test("keeps loaded toolbar out of sticky mode on mobile", async ({ page }) => {
   expect(Math.round(scrolledToolbarBox.y)).toBe(Math.round(toolbarBox.y - scrollY));
 });
 
-test("keeps the loaded toolbar to two reachable rows at 320 CSS pixels", async ({ page }) => {
+test("keeps every loaded toolbar action visible at 320 CSS pixels", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await useSavedLanguage(page, "ru");
   await abortOpenFreeMapTiles(page);
@@ -940,32 +940,35 @@ test("keeps the loaded toolbar to two reachable rows at 320 CSS pixels", async (
   const identityBox = await toolbar.locator(".toolbar__identity").boundingBox();
   const actions = toolbar.locator(".toolbar__actions");
   const actionsBox = await actions.boundingBox();
+  const replaceLabelBox = await toolbar.locator(".upload-box--replace span").boundingBox();
+  const metricPrefixBox = await toolbar.locator(".metric-source-menu__prefix").boundingBox();
   const actionBoxes = await actions.locator(":scope > *").evaluateAll((nodes) =>
     nodes.map((node) => {
       const box = node.getBoundingClientRect();
-      return { top: box.top, bottom: box.bottom };
+      return { top: box.top, right: box.right, bottom: box.bottom, left: box.left };
     })
   );
 
-  if (!identityBox || !actionsBox) {
+  if (!identityBox || !actionsBox || !replaceLabelBox || !metricPrefixBox) {
     throw new Error("Loaded toolbar rows are not measurable");
   }
 
   expect(identityBox.y + identityBox.height).toBeLessThanOrEqual(actionsBox.y);
-  expect(Math.max(...actionBoxes.map(({ top }) => top))).toBeLessThan(
-    Math.min(...actionBoxes.map(({ bottom }) => bottom))
-  );
-  expect(await actions.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  expect(Math.abs(replaceLabelBox.x - metricPrefixBox.x)).toBeLessThanOrEqual(1);
+  expect(actionBoxes).toHaveLength(6);
+  expect(actionBoxes.every(({ left }) => left >= actionsBox.x - 1)).toBe(true);
+  expect(actionBoxes.every(({ right }) => right <= actionsBox.x + actionsBox.width + 1)).toBe(true);
+  expect(new Set(actionBoxes.map(({ top }) => Math.round(top))).size).toBeGreaterThan(1);
+  expect(await actions.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true
   );
 
   const languageSummary = page.locator("[data-language-menu] summary");
-  await languageSummary.scrollIntoViewIfNeeded();
   await expect(languageSummary).toBeInViewport();
 });
 
-test("keeps the scrollable toolbar language menu panel inside the viewport", async ({ page }) => {
+test("keeps the wrapped toolbar language menu panel inside the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 844 });
   await useSavedLanguage(page, "ru");
   await abortOpenFreeMapTiles(page);
@@ -975,7 +978,7 @@ test("keeps the scrollable toolbar language menu panel inside the viewport", asy
 
   const summary = page.locator("[data-language-menu] summary");
 
-  await summary.scrollIntoViewIfNeeded();
+  await expect(summary).toBeInViewport();
   await summary.click();
   await expect(page.locator("[data-language-menu]")).toHaveAttribute("open", "");
   await expect(page.locator(".language-menu__panel")).toBeVisible();
